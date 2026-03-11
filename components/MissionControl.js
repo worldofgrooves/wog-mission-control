@@ -10,7 +10,7 @@ const supabase = createClient(
 // ─── CONSTANTS ───────────────────────────────────────────────────────────────
 
 const COLS = [
-  { key: "inbox",             label: "INBOX",       color: "#64748b" },
+  { key: "inbox",             label: "INBOX",       color: "#888888" },
   { key: "assigned",          label: "ASSIGNED",    color: "#6366f1" },
   { key: "in_progress",       label: "IN PROGRESS", color: "#06b6d4" },
   { key: "blocked",           label: "BLOCKED",     color: "#ef4444" },
@@ -22,7 +22,7 @@ const COLS = [
 const PRI = {
   immediate:     { label: "IMMEDIATE", color: "#ef4444" },
   this_week:     { label: "THIS WEEK", color: "#f59e0b" },
-  when_capacity: { label: "CAPACITY",  color: "#475569" },
+  when_capacity: { label: "CAPACITY",  color: "#666666" },
 };
 
 const BRD = {
@@ -30,7 +30,7 @@ const BRD = {
   plume:           { label: "PLUME",    color: "#6366f1" },
   artifact:        { label: "ARTIFACT", color: "#06b6d4" },
   groove_dwellers: { label: "GD",       color: "#10b981" },
-  shared:          { label: "SHARED",   color: "#64748b" },
+  shared:          { label: "SHARED",   color: "#888888" },
 };
 
 const DPT = {
@@ -51,8 +51,8 @@ const CC = {
   escalation:    "#ef4444",
   decision:      "#f59e0b",
   blocker:       "#ef4444",
-  note:          "#475569",
-  system_event:  "#2d4a6b",
+  note:          "#666666",
+  system_event:  "#444444",
   checkin:       "#10b981",
 };
 
@@ -65,16 +65,16 @@ const DLVR_TYPES = {
 };
 
 const C = {
-  bg:     "#080c14",
-  panel:  "#0a1628",
-  card:   "#0d1824",
-  border: "#1a2f4a",
-  dim:    "#112238",
+  bg:     "#0a0a0a",
+  panel:  "#111111",
+  card:   "#181818",
+  border: "#2a2a2a",
+  dim:    "#1e1e1e",
   cyan:   "#06b6d4",
-  ghost:  "#2d4a6b",
-  muted:  "#475569",
-  sec:    "#94a3b8",
-  pri:    "#e2e8f0",
+  ghost:  "#444444",
+  muted:  "#666666",
+  sec:    "#aaaaaa",
+  pri:    "#f0f0f0",
   glow:   "rgba(6,182,212,0.08)",
 };
 
@@ -171,7 +171,7 @@ function TaskCard({ task, onClick }) {
       onMouseLeave={() => setHov(false)}
       style={{
         padding: "10px 10px 8px",
-        background: hov ? "#0f1e33" : C.card,
+        background: hov ? "#222222" : C.card,
         borderRadius: 4,
         border: `1px solid ${hov ? C.border : C.dim}`,
         borderLeft: `3px solid ${p.color}`,
@@ -196,7 +196,7 @@ function TaskCard({ task, onClick }) {
       <div style={{ display: "flex", flexWrap: "wrap", gap: 3, marginBottom: 6 }}>
         {b && <Badge label={b.label} color={b.color} small />}
         {tags.slice(0, 2).map(t => (
-          <span key={t} style={{ fontSize: 7, padding: "1px 4px", borderRadius: 2, background: "rgba(255,255,255,0.03)", color: C.ghost }}>
+          <span key={t} style={{ fontSize: 7, padding: "1px 4px", borderRadius: 2, background: "rgba(255,255,255,0.06)", color: C.muted }}>
             {t}
           </span>
         ))}
@@ -258,7 +258,7 @@ function TaskModal({ task, onClose }) {
   return (
     <div
       onClick={onClose}
-      style={{ position: "fixed", inset: 0, background: "rgba(4,8,16,.9)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: "16px" }}
+      style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.88)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: "16px" }}
     >
       <div
         onClick={e => e.stopPropagation()}
@@ -272,7 +272,7 @@ function TaskModal({ task, onClose }) {
           display: "flex",
           flexDirection: "column",
           overflow: "hidden",
-          boxShadow: "0 0 80px rgba(6,182,212,.12), 0 40px 80px rgba(0,0,0,.7)",
+          boxShadow: "0 0 80px rgba(0,0,0,.8), 0 40px 80px rgba(0,0,0,.9)",
         }}
       >
         {/* Header */}
@@ -303,7 +303,7 @@ function TaskModal({ task, onClose }) {
             {d && <Badge label={d.label} color={d.color} />}
             {urgency && <Badge label={urgency.label} color={urgency.color} />}
             {tags.map(t => (
-              <span key={t} style={{ fontSize: 8, padding: "2px 6px", borderRadius: 2, background: "rgba(255,255,255,.04)", color: C.muted, border: `1px solid ${C.dim}` }}>
+              <span key={t} style={{ fontSize: 8, padding: "2px 6px", borderRadius: 2, background: "rgba(255,255,255,.06)", color: C.sec, border: `1px solid ${C.border}` }}>
                 {t}
               </span>
             ))}
