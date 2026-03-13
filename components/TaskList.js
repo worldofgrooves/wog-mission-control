@@ -198,8 +198,9 @@ export default function TaskList({
             onClick={onMenuOpen}
             style={{
               background: "none", border: "none",
-              color: "#555", fontSize: 20, cursor: "pointer",
+              color: "#f0f0f0", fontSize: 26, cursor: "pointer",
               padding: 0, marginBottom: 10, display: "block",
+              lineHeight: 1,
             }}
           >
             ☰
@@ -293,14 +294,18 @@ export default function TaskList({
       {/* ── Fixed bottom capture bar ── */}
       <div style={{
         flexShrink: 0,
-        padding: "14px 20px",
-        background: "#111",
+        padding: "8px 12px 14px",
+        background: "#000",
         borderTop: "1px solid #1a1a1a",
       }}>
         <div style={{
           display: "flex",
           alignItems: "center",
           gap: 14,
+          background: "#1c1c1c",
+          borderRadius: 10,
+          padding: "14px 14px",
+          border: "1px solid transparent",
         }}>
           <span style={{
             color: "#c9a96e",
