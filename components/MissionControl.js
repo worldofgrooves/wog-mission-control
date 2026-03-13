@@ -214,8 +214,8 @@ function TaskCard({ task, onClick }) {
           </span>
         ) : <span />}
 
-        {task.agents?.display_name && (
-          <span style={{ fontSize: 8, color: C.ghost }}>→ {task.agents.display_name}</span>
+        {task.mc_agents?.display_name && (
+          <span style={{ fontSize: 8, color: C.ghost }}>→ {task.mc_agents.display_name}</span>
         )}
       </div>
 
@@ -245,8 +245,8 @@ function TaskModal({ task, onClose }) {
   useEffect(() => {
     async function load() {
       const [cm, dv] = await Promise.all([
-        supabase.from("task_comments").select("*").eq("task_id", task.id).order("created_at", { ascending: true }),
-        supabase.from("task_deliverables").select("*").eq("task_id", task.id).order("created_at", { ascending: false }),
+        supabase.from("mc_task_comments").select("*").eq("task_id", task.id).order("created_at", { ascending: true }),
+        supabase.from("mc_task_deliverables").select("*").eq("task_id", task.id).order("created_at", { ascending: false }),
       ]);
       setComments(cm.data || []);
       setDelivs(dv.data || []);
@@ -323,7 +323,7 @@ function TaskModal({ task, onClose }) {
               {task.assignee_agent_id && (
                 <div>
                   <div style={{ fontSize: 7, color: C.ghost, letterSpacing: 1 }}>AGENT</div>
-                  <div style={{ fontSize: 13, color: C.sec, fontWeight: 700 }}>{task.agents?.display_name || "—"}</div>
+                  <div style={{ fontSize: 13, color: C.sec, fontWeight: 700 }}>{task.mc_agents?.display_name || "—"}</div>
                 </div>
               )}
             </div>
@@ -572,9 +572,9 @@ function LiveFeed({ comments, isMobile, onClose }) {
                   <span style={{ fontSize: 8, color: tc, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5 }}>{cm.author_name}</span>
                   <span style={{ fontSize: 7, color: C.ghost }}>{ago(cm.created_at)}</span>
                 </div>
-                {cm.tasks && (
+                {cm.mc_tasks && (
                   <div style={{ fontSize: 7, color: C.ghost, marginBottom: 3 }}>
-                    #{cm.tasks.task_number} · {cm.tasks.title?.slice(0, 24)}{cm.tasks.title?.length > 24 ? "…" : ""}
+                    #{cm.mc_tasks.task_number} · {cm.mc_tasks.title?.slice(0, 24)}{cm.mc_tasks.title?.length > 24 ? "…" : ""}
                   </div>
                 )}
                 <div style={{ fontSize: 10, color: C.sec, lineHeight: 1.4 }}>
@@ -797,9 +797,9 @@ export default function MissionControl() {
 
   const loadAll = useCallback(async () => {
     const [ag, tk, cm] = await Promise.all([
-      supabase.from("agents").select("*").order("department").order("display_name"),
-      supabase.from("tasks").select("*, agents(display_name, avatar, status)").order("position").order("created_at"),
-      supabase.from("task_comments").select("*, tasks(title, task_number)").order("created_at", { ascending: false }).limit(60),
+      supabase.from("mc_agents").select("*").order("department").order("display_name"),
+      supabase.from("mc_tasks").select("*, mc_agents(display_name, avatar, status)").order("position").order("created_at"),
+      supabase.from("mc_task_comments").select("*, mc_tasks(title, task_number)").order("created_at", { ascending: false }).limit(60),
     ]);
     if (ag.data) setAgents(ag.data);
     if (tk.data) setTasks(tk.data);

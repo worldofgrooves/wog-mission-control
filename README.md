@@ -25,7 +25,7 @@ npx vercel --prod
 ```
 
 Add env vars in Vercel dashboard:
-- `NEXT_PUBLIC_SUPABASE_URL`     → `https://xecgwknxfwdxjrxziehm.supabase.co`
+- `NEXT_PUBLIC_SUPABASE_URL`     → `https://gxavodhoymuozzasfkgj.supabase.co`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` → your anon key from Supabase Settings → API
 
 ## Supabase RLS
@@ -33,10 +33,10 @@ Add env vars in Vercel dashboard:
 The dashboard uses the anon key. Add read policies for authenticated/public access:
 
 ```sql
--- Repeat for: agents, tasks, task_comments
-CREATE POLICY "Allow read" ON agents FOR SELECT USING (true);
-CREATE POLICY "Allow read" ON tasks FOR SELECT USING (true);
-CREATE POLICY "Allow read" ON task_comments FOR SELECT USING (true);
+-- Repeat for: mc_agents, mc_tasks, mc_task_comments
+CREATE POLICY "Allow read" ON mc_agents FOR SELECT USING (true);
+CREATE POLICY "Allow read" ON mc_tasks FOR SELECT USING (true);
+CREATE POLICY "Allow read" ON mc_task_comments FOR SELECT USING (true);
 ```
 
 Since Cloudflare Access is your auth gate, `USING (true)` is fine —
