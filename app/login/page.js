@@ -55,20 +55,22 @@ export default function LoginPage() {
           marginBottom: 40,
         }}>
           <div style={{
+            fontSize: 18,
+            color: "#ffffff",
+            letterSpacing: 4,
+            fontWeight: 700,
+            marginBottom: 8,
+            textTransform: "uppercase",
+          }}>
+            World of Grooves
+          </div>
+          <div style={{
             fontSize: 13,
             color: "#c9a96e",
             letterSpacing: 4,
             fontWeight: 700,
-            marginBottom: 8,
           }}>
             ◈ MISSION CONTROL
-          </div>
-          <div style={{
-            fontSize: 12,
-            color: "#333",
-            letterSpacing: 1,
-          }}>
-            World of Grooves
           </div>
         </div>
 
