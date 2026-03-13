@@ -177,7 +177,56 @@ export default function Sidebar({ tasks, agents, activeView, onViewChange, onClo
         {/* Agents */}
         <div style={{ marginBottom: 8 }}>
           <SectionLabel>Agents</SectionLabel>
-          {renderItem("agent:unassigned", "Denver", "○")}
+          {(() => {
+            const id = "agent:unassigned";
+            const isActive = activeView === id;
+            const count = counts[id] || 0;
+            return (
+              <button
+                key={id}
+                onClick={() => onViewChange(id)}
+                style={{
+                  display: "flex", alignItems: "center", gap: 10,
+                  width: "100%", padding: "10px 12px",
+                  background: isActive ? "rgba(201,169,110,0.14)" : "transparent",
+                  border: "none", borderRadius: 8, cursor: "pointer",
+                  color: isActive ? "#c9a96e" : "#c8c8c8",
+                  fontSize: 16, textAlign: "left",
+                  transition: "background 0.1s, color 0.1s",
+                  fontWeight: isActive ? 500 : 400,
+                }}
+              >
+                {/* Gold dot -- Denver is always present */}
+                <span style={{
+                  width: 20, display: "flex", alignItems: "center",
+                  justifyContent: "center", flexShrink: 0,
+                }}>
+                  <span style={{
+                    display: "inline-block",
+                    width: 7, height: 7, borderRadius: "50%",
+                    background: "#c9a96e",
+                    boxShadow: "0 0 6px #c9a96e88",
+                    flexShrink: 0,
+                  }} />
+                </span>
+                <span style={{
+                  flex: 1, overflow: "hidden",
+                  textOverflow: "ellipsis", whiteSpace: "nowrap",
+                }}>
+                  Denver
+                </span>
+                {count > 0 && (
+                  <span style={{
+                    fontSize: 14,
+                    color: isActive ? "#c9a96e" : "#666",
+                    minWidth: 20, textAlign: "right", flexShrink: 0,
+                  }}>
+                    {count}
+                  </span>
+                )}
+              </button>
+            );
+          })()}
           {agents.map(a => {
             const id = `agent:${a.id}`;
             const isActive = activeView === id;
