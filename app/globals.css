@@ -1,44 +1,45 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
-
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --bg-base:    #080c14;
-  --bg-panel:   #0a1628;
-  --bg-card:    #0d1824;
-  --border:     #1a2f4a;
-  --border-dim: #112238;
-  --cyan:       #06b6d4;
-  --cyan-dim:   rgba(6,182,212,0.12);
-  --text-primary:   #e2e8f0;
-  --text-secondary: #94a3b8;
-  --text-muted:     #475569;
-  --text-ghost:     #2d4a6b;
+  --bg:          #000000;
+  --surface:     #0d0d0d;
+  --surface-2:   #111111;
+  --card:        #161616;
+  --card-hover:  #1c1c1c;
+  --border:      #2a2a2a;
+  --border-dim:  #1a1a1a;
+  --text:        #f0f0f0;
+  --text-sec:    #aaaaaa;
+  --text-muted:  #666666;
+  --text-dim:    #3a3a3a;
+  --gold:        #c9a96e;
+  --gold-bg:     rgba(201, 169, 110, 0.10);
+  --gold-border: rgba(201, 169, 110, 0.25);
+  --red:         #ef4444;
+  --yellow:      #f59e0b;
+  --cyan:        #06b6d4;
+  --green:       #10b981;
+  --purple:      #a855f7;
+  --indigo:      #6366f1;
 }
 
 html, body {
   height: 100%;
-  background: var(--bg-base);
-  color: var(--text-primary);
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 12px;
+  background: var(--bg);
+  color: var(--text);
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-size: 15px;
 }
 
-::-webkit-scrollbar { width: 4px; height: 4px; }
+button, input, textarea, select { font-family: inherit; }
+
+::-webkit-scrollbar { width: 3px; height: 3px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #1a2f4a; border-radius: 2px; }
+::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 2px; }
 
-button { font-family: 'IBM Plex Mono', monospace; cursor: pointer; }
-
-@keyframes pulse-glow {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0.4; }
-}
-
-@keyframes fadeSlideIn {
-  from { opacity: 0; transform: translateY(3px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-.fade-in { animation: fadeSlideIn 0.18s ease-out forwards; }
+input[type="date"], input[type="datetime-local"] { color-scheme: dark; }
