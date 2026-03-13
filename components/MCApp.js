@@ -466,6 +466,7 @@ export default function MCApp() {
               onQuickCapture={quickCapture}
               onMenuOpen={() => setSidebarOpen(true)}
               onAgentProfile={handleAgentProfile}
+              onStatusChange={(id, status) => updateTask(id, { status })}
             />
           </div>
         )}

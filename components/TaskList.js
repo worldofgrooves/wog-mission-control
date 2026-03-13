@@ -1,6 +1,7 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import { PRI_COLOR, PRI_ORDER, STATUS_COLOR, STATUS_LABEL, BRAND_LABEL } from "./MCApp";
+import KanbanBoard from "./KanbanBoard";
 
 // ─── Task Card ────────────────────────────────────────────────────────────────
 
@@ -144,6 +145,48 @@ function TaskRow({ task, agents, isSelected, onSelect, onToggleComplete, onToggl
 
 // ─── Task List ────────────────────────────────────────────────────────────────
 
+// ─── View toggle (list / board) ───────────────────────────────────────────────
+
+function ViewToggle({ viewMode, onChange }) {
+  const btn = (mode, icon, label) => {
+    const active = viewMode === mode;
+    return (
+      <button
+        onClick={() => onChange(mode)}
+        title={label}
+        style={{
+          background: active ? "#2a2a2a" : "transparent",
+          border: "none",
+          borderRadius: 6,
+          padding: "5px 8px",
+          cursor: "pointer",
+          color: active ? "#c9a96e" : "#444",
+          fontSize: 16,
+          lineHeight: 1,
+          transition: "background 0.1s, color 0.1s",
+        }}
+      >
+        {icon}
+      </button>
+    );
+  };
+  return (
+    <div style={{
+      display: "flex",
+      alignItems: "center",
+      background: "#111",
+      border: "1px solid #1e1e1e",
+      borderRadius: 8,
+      padding: 2,
+      gap: 1,
+      flexShrink: 0,
+    }}>
+      {btn("list",  "≡", "List view")}
+      {btn("board", "⊞", "Board view")}
+    </div>
+  );
+}
+
 export default function TaskList({
   tasks,
   completedTasks = [],
@@ -158,9 +201,11 @@ export default function TaskList({
   onQuickCapture,
   onMenuOpen,
   onAgentProfile,
+  onStatusChange,
 }) {
   const [captureText, setCaptureText] = useState("");
   const [showDone, setShowDone]       = useState(false);
+  const [viewMode,  setViewMode]      = useState("list");
   const inputRef = useRef(null);
 
   // Collapse completed section whenever the view changes
@@ -214,16 +259,25 @@ export default function TaskList({
             ☰
           </button>
         )}
-        <h1 style={{
-          fontSize: 34,
-          fontWeight: 700,
-          color: "#c9a96e",
-          margin: 0,
-          lineHeight: 1.15,
-          letterSpacing: -0.5,
-        }}>
-          {viewTitle}
-        </h1>
+
+        {/* Title row -- toggle only on desktop */}
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+          <h1 style={{
+            fontSize: 34,
+            fontWeight: 700,
+            color: "#c9a96e",
+            margin: 0,
+            lineHeight: 1.15,
+            letterSpacing: -0.5,
+          }}>
+            {viewTitle}
+          </h1>
+          {!isMobile && (
+            <div style={{ paddingTop: 6 }}>
+              <ViewToggle viewMode={viewMode} onChange={setViewMode} />
+            </div>
+          )}
+        </div>
 
         {/* Agent profile trigger -- only on agent views with a real agent */}
         {(() => {
@@ -255,8 +309,19 @@ export default function TaskList({
         })()}
       </div>
 
-      {/* ── Scrollable task list ── */}
-      <div style={{ flex: 1, overflowY: "auto", paddingTop: 6 }}>
+      {/* ── Board view ── */}
+      {viewMode === "board" && (
+        <KanbanBoard
+          tasks={[...tasks, ...completedTasks]}
+          agents={agents}
+          selectedId={selectedId}
+          onTaskSelect={onTaskSelect}
+          onStatusChange={onStatusChange}
+        />
+      )}
+
+      {/* ── Scrollable task list (list mode only) ── */}
+      {viewMode === "list" && <div style={{ flex: 1, overflowY: "auto", paddingTop: 6 }}>
 
         {sorted.length === 0 && doneTasks.length === 0 && (
           <div style={{
@@ -326,7 +391,7 @@ export default function TaskList({
         ))}
 
         <div style={{ height: 12 }} />
-      </div>
+      </div>}
 
       {/* ── Fixed bottom capture bar ── */}
       <div style={{
