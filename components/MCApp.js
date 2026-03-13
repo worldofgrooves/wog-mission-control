@@ -87,9 +87,15 @@ export function filterTasks(tasks, view) {
       return tasks.filter(t => t.status === "done");
     default:
       if (view.startsWith("agent:")) {
-        const id = view.slice(6);
-        if (id === "unassigned") return active.filter(t => !t.assignee_agent_id);
-        return active.filter(t => t.assignee_agent_id === id);
+        const rest = view.slice(6);
+        // Per-agent completed view
+        if (rest.endsWith(":done")) {
+          const id = rest.slice(0, -5);
+          if (id === "unassigned") return tasks.filter(t => t.status === "done" && !t.assignee_agent_id);
+          return tasks.filter(t => t.status === "done" && t.assignee_agent_id === id);
+        }
+        if (rest === "unassigned") return active.filter(t => !t.assignee_agent_id);
+        return active.filter(t => t.assignee_agent_id === rest);
       }
       if (view.startsWith("brand:")) {
         return active.filter(t => t.brand === view.slice(6));
@@ -107,9 +113,14 @@ export function getViewTitle(view, agents) {
   };
   if (map[view]) return map[view];
   if (view.startsWith("agent:")) {
-    const id = view.slice(6);
-    if (id === "unassigned") return "Denver";
-    return agents.find(a => a.id === id)?.display_name || "Agent";
+    const rest = view.slice(6);
+    if (rest.endsWith(":done")) {
+      const id = rest.slice(0, -5);
+      const name = id === "unassigned" ? "Denver" : agents.find(a => a.id === id)?.display_name || "Agent";
+      return `${name} -- Completed`;
+    }
+    if (rest === "unassigned") return "Denver";
+    return agents.find(a => a.id === rest)?.display_name || "Agent";
   }
   if (view.startsWith("brand:")) return BRAND_LABEL[view.slice(6)] || view.slice(6);
   return "Tasks";
@@ -241,9 +252,14 @@ export default function MCApp() {
     // Pre-fill context from active view
     if (activeView === "my-day")       { fields.flagged_today = true; fields.priority = "immediate"; }
     if (activeView === "important")    { fields.priority = "immediate"; }
-    if (activeView.startsWith("agent:") && activeView.slice(6) !== "unassigned") {
-      fields.assignee_agent_id = activeView.slice(6);
-      fields.status = "assigned";
+    if (activeView.startsWith("agent:")) {
+      const agentPart = activeView.slice(6);
+      const isDone = agentPart.endsWith(":done");
+      const agentId = isDone ? agentPart.slice(0, -5) : agentPart;
+      if (!isDone && agentId !== "unassigned") {
+        fields.assignee_agent_id = agentId;
+        fields.status = "assigned";
+      }
     }
     if (activeView.startsWith("brand:")) fields.brand = activeView.slice(6);
 
