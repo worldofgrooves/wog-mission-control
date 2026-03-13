@@ -157,6 +157,7 @@ export default function TaskList({
   onToggleStar,
   onQuickCapture,
   onMenuOpen,
+  onAgentProfile,
 }) {
   const [captureText, setCaptureText] = useState("");
   const [showDone, setShowDone]       = useState(false);
@@ -223,6 +224,35 @@ export default function TaskList({
         }}>
           {viewTitle}
         </h1>
+
+        {/* Agent profile trigger -- only on agent views with a real agent */}
+        {(() => {
+          if (!activeView.startsWith("agent:")) return null;
+          const agentPart = activeView.slice(6);
+          if (agentPart === "unassigned" || agentPart.endsWith(":done")) return null;
+          const agent = agents.find(a => a.id === agentPart);
+          if (!agent) return null;
+          return (
+            <button
+              onClick={() => onAgentProfile?.(agentPart)}
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 6,
+                marginTop: 8, padding: "5px 12px",
+                background: "transparent",
+                border: "1px solid #2a2a2a",
+                borderRadius: 20, cursor: "pointer",
+                color: "#666", fontSize: 12,
+                transition: "border-color 0.15s, color 0.15s",
+              }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = "#444"; e.currentTarget.style.color = "#999"; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = "#2a2a2a"; e.currentTarget.style.color = "#666"; }}
+            >
+              <span style={{ fontSize: 10 }}>◉</span>
+              {agent.role}
+              <span style={{ fontSize: 11 }}>›</span>
+            </button>
+          );
+        })()}
       </div>
 
       {/* ── Scrollable task list ── */}

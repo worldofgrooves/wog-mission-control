@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import Sidebar from "./Sidebar";
 import TaskList from "./TaskList";
 import TaskDetail from "./TaskDetail";
+import AgentProfile from "./AgentProfile";
 
 const sb = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -177,6 +178,7 @@ export default function MCApp() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [sidebarOpen,   setSidebarOpen]   = useState(false);
   const [isMobile,      setIsMobile]      = useState(false);
+  const [profileAgentId, setProfileAgentId] = useState(null);
 
   // ── Responsive ──
   useEffect(() => {
@@ -359,6 +361,10 @@ export default function MCApp() {
     if (isMobile) setSidebarOpen(false);
   }, [isMobile]);
 
+  const handleAgentProfile = useCallback((agentId) => {
+    setProfileAgentId(agentId);
+  }, []);
+
   const handleTaskSelect = useCallback((task) => {
     setSelectedId(task ? task.id : null);
   }, []);
@@ -452,6 +458,7 @@ export default function MCApp() {
               onToggleStar={toggleStar}
               onQuickCapture={quickCapture}
               onMenuOpen={() => setSidebarOpen(true)}
+              onAgentProfile={handleAgentProfile}
             />
           </div>
         )}
@@ -485,6 +492,18 @@ export default function MCApp() {
       </div>
 
       </div> {/* end main layout */}
+
+      {/* ── Agent profile modal ── */}
+      {profileAgentId && (() => {
+        const agent = agents.find(a => a.id === profileAgentId);
+        return agent ? (
+          <AgentProfile
+            agent={agent}
+            tasks={tasks}
+            onClose={() => setProfileAgentId(null)}
+          />
+        ) : null;
+      })()}
     </div>
   );
 }
