@@ -325,18 +325,19 @@ export default function TaskDetail({
             >
               ☀
             </button>
-            {isMobile && (
-              <button
-                onClick={onClose}
-                style={{
-                  background: "none", border: "none",
-                  color: "#555", cursor: "pointer",
-                  fontSize: 24, padding: "4px 6px", lineHeight: 1,
-                }}
-              >
-                ×
-              </button>
-            )}
+            <button
+              onClick={onClose}
+              style={{
+                background: "none", border: "none",
+                color: "#555", cursor: "pointer",
+                fontSize: 24, padding: "4px 6px", lineHeight: 1,
+                transition: "color 0.1s",
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.color = "#aaa"}
+              onMouseLeave={(e) => e.currentTarget.style.color = "#555"}
+            >
+              ×
+            </button>
           </div>
         </div>
 
