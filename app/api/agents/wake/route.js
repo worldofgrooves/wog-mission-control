@@ -17,10 +17,10 @@ export async function POST(request) {
       return NextResponse.json({ error: "agentName required" }, { status: 400 });
     }
 
-    // Look up the agent's Telegram chat ID
+    // Look up the agent's Telegram chat ID and bot token env var name
     const { data: agent, error: agentErr } = await sb
       .from("mc_agents")
-      .select("name, display_name, telegram_chat_id")
+      .select("name, display_name, telegram_chat_id, telegram_bot_token_env")
       .eq("name", agentName)
       .single();
 
@@ -30,19 +30,24 @@ export async function POST(request) {
 
     if (!agent.telegram_chat_id) {
       return NextResponse.json(
-        { error: `${agent.display_name} has no Telegram chat ID configured. Set telegram_chat_id on the agent record in Supabase.` },
+        { error: `${agent.display_name} has no Telegram chat ID configured.` },
         { status: 422 }
       );
     }
 
-    // Bot token is stored as an env var named after the agent
-    // e.g. vision -> TELEGRAM_BOT_TOKEN_VISION
-    const tokenKey = `TELEGRAM_BOT_TOKEN_${agentName.toUpperCase()}`;
-    const botToken = process.env[tokenKey];
+    if (!agent.telegram_bot_token_env) {
+      return NextResponse.json(
+        { error: `${agent.display_name} has no bot token env var configured.` },
+        { status: 422 }
+      );
+    }
+
+    // Token env var name comes from the DB (e.g. BUILD_BOT_TOKEN, CONTENT_BOT_TOKEN)
+    const botToken = process.env[agent.telegram_bot_token_env];
 
     if (!botToken) {
       return NextResponse.json(
-        { error: `Bot token not configured. Add ${tokenKey} to Vercel environment variables.` },
+        { error: `Bot token not found. Add ${agent.telegram_bot_token_env} to Vercel environment variables.` },
         { status: 422 }
       );
     }
