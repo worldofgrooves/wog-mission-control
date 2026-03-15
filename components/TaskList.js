@@ -271,20 +271,6 @@ export default function TaskList({
     }}>
       {/* ── Header ── */}
       <div style={{ padding: "24px 20px 10px", flexShrink: 0 }}>
-        {isMobile && (
-          <button
-            onClick={onMenuOpen}
-            style={{
-              background: "none", border: "none",
-              color: "#f0f0f0", fontSize: 26, cursor: "pointer",
-              padding: 0, marginBottom: 10, display: "block",
-              lineHeight: 1,
-            }}
-          >
-            ☰
-          </button>
-        )}
-
         {/* Title row -- toggle only on desktop */}
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
           <h1 style={{

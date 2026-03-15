@@ -141,27 +141,42 @@ function StatChip({ value, label, color = "#c9a96e" }) {
   );
 }
 
-function StatsBar({ stats }) {
+function StatsBar({ stats, isMobile, onMenuOpen }) {
   return (
     <div style={{
       flexShrink: 0,
-      height: 42,
+      height: 48,
       background: "#080808",
       borderBottom: "1px solid #161616",
       display: "flex",
       alignItems: "center",
-      padding: "0 20px",
-      gap: 24,
+      padding: isMobile ? "0 16px 0 4px" : "0 20px",
+      gap: isMobile ? 16 : 24,
     }}>
-      <div style={{
-        fontSize: 9, color: "#c9a96e", letterSpacing: 3,
-        fontWeight: 700, marginRight: 4, flexShrink: 0,
-      }}>
-        ◈ MC
-      </div>
+      {/* On mobile: hamburger menu button. On desktop: ◈ MC monogram. */}
+      {isMobile ? (
+        <button
+          onClick={onMenuOpen}
+          style={{
+            background: "none", border: "none",
+            color: "#e0e0e0", fontSize: 28, cursor: "pointer",
+            padding: "4px 12px", lineHeight: 1, flexShrink: 0,
+            display: "flex", alignItems: "center",
+          }}
+        >
+          ☰
+        </button>
+      ) : (
+        <div style={{
+          fontSize: 9, color: "#c9a96e", letterSpacing: 3,
+          fontWeight: 700, marginRight: 4, flexShrink: 0,
+        }}>
+          ◈ MC
+        </div>
+      )}
       <StatChip value={stats.agentsActive} label="Agents Active" color="#10b981" />
       <StatChip value={stats.inQueue}      label="In Queue"      color="#c9a96e" />
-      {stats.blocked > 0      && <StatChip value={stats.blocked}         label="Blocked" color="#ef4444" />}
+      {stats.blocked > 0         && <StatChip value={stats.blocked}         label="Blocked" color="#ef4444" />}
       {stats.waitingOnDenver > 0 && <StatChip value={stats.waitingOnDenver} label="Waiting" color="#a855f7" />}
     </div>
   );
@@ -401,7 +416,7 @@ export default function MCApp() {
       color: "#f0f0f0",
     }}>
       {/* ── Stats bar ── */}
-      <StatsBar stats={stats} />
+      <StatsBar stats={stats} isMobile={isMobile} onMenuOpen={() => setSidebarOpen(true)} />
 
       {/* ── Main layout (sidebar + content) ── */}
       <div style={{ flex: 1, display: "flex", overflow: "hidden", minWidth: 0 }}>
