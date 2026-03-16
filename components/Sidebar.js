@@ -28,7 +28,7 @@ const ARCHIVE_VIEWS = [
   { id: "done",   label: "Done" },
 ];
 
-export default function Sidebar({ tasks, agents, activeView, onViewChange, onClose, isMobile, onWakeAgent, folders, ideasCount, onAddFolder, onDeleteFolder }) {
+export default function Sidebar({ tasks, agents, activeView, onViewChange, onClose, isMobile, onWakeAgent, folders, ideasCount, onAddFolder, onDeleteFolder, onDashOpen }) {
   const router = useRouter();
   const [ideasOpen, setIdeasOpen] = useState(
     activeView === "ideas:all" || activeView.startsWith("ideas:folder:")
@@ -509,12 +509,39 @@ export default function Sidebar({ tasks, agents, activeView, onViewChange, onClo
         </div>
       </div>
 
-      {/* Sign out */}
+      {/* Footer actions */}
       <div style={{
         padding: "10px 8px",
         borderTop: "1px solid #161616",
         flexShrink: 0,
       }}>
+        {/* Health dashboard */}
+        {onDashOpen && (
+          <button
+            onClick={() => { onDashOpen(); onClose?.(); }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              width: "100%",
+              padding: "10px 12px",
+              background: "transparent",
+              border: "none",
+              borderRadius: 8,
+              cursor: "pointer",
+              color: "#555",
+              fontSize: 14,
+              textAlign: "left",
+              transition: "color 0.1s",
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.color = "#c9a96e"}
+            onMouseLeave={(e) => e.currentTarget.style.color = "#555"}
+          >
+            <span style={{ width: 20, textAlign: "center", fontSize: 14, flexShrink: 0 }}>◉</span>
+            Dashboard
+          </button>
+        )}
+        {/* Sign out */}
         <button
           onClick={handleSignOut}
           style={{

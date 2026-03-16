@@ -180,28 +180,30 @@ function StatsBar({ stats, isMobile, onMenuOpen, onDashOpen }) {
       <StatChip value={stats.inQueue}      label="In Queue"      color="#c9a96e" />
       {stats.blocked > 0         && <StatChip value={stats.blocked}         label="Blocked" color="#ef4444" />}
       {stats.waitingOnDenver > 0 && <StatChip value={stats.waitingOnDenver} label="Waiting" color="#a855f7" />}
-      {/* Agent health dashboard button */}
-      <button
-        onClick={onDashOpen}
-        title="Open health dashboard"
-        style={{
-          background: "none",
-          border: "1px solid #222",
-          borderRadius: 6,
-          color: "#555",
-          fontSize: 13,
-          cursor: "pointer",
-          padding: "5px 10px",
-          lineHeight: 1,
-          letterSpacing: 0.5,
-          flexShrink: 0,
-          transition: "border-color 0.12s, color 0.12s",
-        }}
-        onMouseEnter={e => { e.currentTarget.style.borderColor = "#444"; e.currentTarget.style.color = "#c9a96e"; }}
-        onMouseLeave={e => { e.currentTarget.style.borderColor = "#222"; e.currentTarget.style.color = "#555"; }}
-      >
-        ◉ Dashboard
-      </button>
+      {/* Agent health dashboard button -- desktop only (mobile uses sidebar) */}
+      {!isMobile && (
+        <button
+          onClick={onDashOpen}
+          title="Open health dashboard"
+          style={{
+            background: "none",
+            border: "1px solid #222",
+            borderRadius: 6,
+            color: "#555",
+            fontSize: 13,
+            cursor: "pointer",
+            padding: "5px 10px",
+            lineHeight: 1,
+            letterSpacing: 0.5,
+            flexShrink: 0,
+            transition: "border-color 0.12s, color 0.12s",
+          }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = "#444"; e.currentTarget.style.color = "#c9a96e"; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = "#222"; e.currentTarget.style.color = "#555"; }}
+        >
+          ◉ Dashboard
+        </button>
+      )}
     </div>
   );
 }
@@ -601,6 +603,7 @@ export default function MCApp() {
           ideasCount={ideasCount}
           onAddFolder={addFolder}
           onDeleteFolder={deleteFolder}
+          onDashOpen={() => setShowDash(true)}
           onWakeAgent={async (agentName) => {
             await fetch("/api/agents/wake", {
               method: "POST",
