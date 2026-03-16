@@ -182,7 +182,7 @@ export default function Sidebar({ tasks, agents, activeView, onViewChange, onClo
       </div>
 
       {/* Scrollable nav */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "10px 8px 12px" }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: "10px 8px 12px", overscrollBehavior: "contain", WebkitOverflowScrolling: "touch" }}>
 
         {/* Smart views -- no section label, top level */}
         <div style={{ marginBottom: 8 }}>

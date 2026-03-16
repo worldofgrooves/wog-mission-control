@@ -239,6 +239,16 @@ export default function MCApp() {
     return () => window.removeEventListener("resize", check);
   }, []);
 
+  // ── Lock body scroll when mobile sidebar is open ──
+  useEffect(() => {
+    if (isMobile && sidebarOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [isMobile, sidebarOpen]);
+
   // ── Load data ──
   const loadData = useCallback(async () => {
     const [ag, tk] = await Promise.all([
