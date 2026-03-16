@@ -142,7 +142,7 @@ function StatChip({ value, label, color = "#c9a96e" }) {
   );
 }
 
-function StatsBar({ stats, isMobile, onMenuOpen }) {
+function StatsBar({ stats, isMobile, onMenuOpen, onDashOpen }) {
   return (
     <div style={{
       flexShrink: 0,
@@ -180,6 +180,28 @@ function StatsBar({ stats, isMobile, onMenuOpen }) {
       <StatChip value={stats.inQueue}      label="In Queue"      color="#c9a96e" />
       {stats.blocked > 0         && <StatChip value={stats.blocked}         label="Blocked" color="#ef4444" />}
       {stats.waitingOnDenver > 0 && <StatChip value={stats.waitingOnDenver} label="Waiting" color="#a855f7" />}
+      {/* Agent health dashboard button */}
+      <button
+        onClick={onDashOpen}
+        title="Open health dashboard"
+        style={{
+          background: "none",
+          border: "1px solid #222",
+          borderRadius: 6,
+          color: "#555",
+          fontSize: 13,
+          cursor: "pointer",
+          padding: "5px 10px",
+          lineHeight: 1,
+          letterSpacing: 0.5,
+          flexShrink: 0,
+          transition: "border-color 0.12s, color 0.12s",
+        }}
+        onMouseEnter={e => { e.currentTarget.style.borderColor = "#444"; e.currentTarget.style.color = "#c9a96e"; }}
+        onMouseLeave={e => { e.currentTarget.style.borderColor = "#222"; e.currentTarget.style.color = "#555"; }}
+      >
+        ◉ Dashboard
+      </button>
     </div>
   );
 }
@@ -190,6 +212,7 @@ export default function MCApp() {
   const [tasks,         setTasks]         = useState([]);
   const [agents,        setAgents]        = useState([]);
   const [loading,       setLoading]       = useState(true);
+  const [showDash,      setShowDash]      = useState(false);
   const [activeView,    setActiveView]    = useState("my-day");
   const [selectedId,    setSelectedId]    = useState(null);
   const [detailData,    setDetailData]    = useState(null);
@@ -539,7 +562,7 @@ export default function MCApp() {
       color: "#f0f0f0",
     }}>
       {/* ── Stats bar ── */}
-      <StatsBar stats={stats} isMobile={isMobile} onMenuOpen={() => setSidebarOpen(true)} />
+      <StatsBar stats={stats} isMobile={isMobile} onMenuOpen={() => setSidebarOpen(true)} onDashOpen={() => setShowDash(true)} />
 
       {/* ── Main layout (sidebar + content) ── */}
       <div style={{ flex: 1, display: "flex", overflow: "hidden", minWidth: 0 }}>
@@ -694,6 +717,60 @@ export default function MCApp() {
           />
         ) : null;
       })()}
+
+      {/* ── Health dashboard overlay ── */}
+      {showDash && (
+        <div style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 100,
+          display: "flex",
+          flexDirection: "column",
+          background: "#000",
+        }}>
+          {/* Close bar */}
+          <div style={{
+            flexShrink: 0,
+            height: 48,
+            background: "#080808",
+            borderBottom: "1px solid #161616",
+            display: "flex",
+            alignItems: "center",
+            padding: "0 20px",
+            gap: 16,
+          }}>
+            <span style={{ fontSize: 9, color: "#c9a96e", letterSpacing: 3, fontWeight: 700 }}>
+              ◉ DASHBOARD
+            </span>
+            <div style={{ flex: 1 }} />
+            <button
+              onClick={() => setShowDash(false)}
+              style={{
+                background: "none", border: "none",
+                color: "#555", fontSize: 28, cursor: "pointer",
+                padding: "2px 8px", lineHeight: 1,
+                transition: "color 0.1s",
+              }}
+              onMouseEnter={e => e.currentTarget.style.color = "#aaa"}
+              onMouseLeave={e => e.currentTarget.style.color = "#555"}
+            >
+              ×
+            </button>
+          </div>
+          {/* iframe */}
+          <iframe
+            src={process.env.NEXT_PUBLIC_DASH_URL}
+            style={{
+              flex: 1,
+              border: "none",
+              width: "100%",
+              height: "100%",
+              background: "#000",
+            }}
+            title="Health Dashboard"
+          />
+        </div>
+      )}
     </div>
   );
 }
