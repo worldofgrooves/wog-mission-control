@@ -327,9 +327,13 @@ export default function MCApp() {
   }, [updateTask]);
 
   const toggleStar = useCallback(async (task) => {
-    await updateTask(task.id, {
-      priority: task.priority === "immediate" ? "this_week" : "immediate",
-    });
+    const isStarring = task.priority !== "immediate";
+    const fields = {
+      priority: isStarring ? "immediate" : "this_week",
+    };
+    // When starring: push to top of list by undercutting any existing sort_order
+    if (isStarring) fields.sort_order = 0;
+    await updateTask(task.id, fields);
   }, [updateTask]);
 
   const toggleMyDay = useCallback(async (task) => {
@@ -631,7 +635,7 @@ export default function MCApp() {
                   onMenuOpen={() => setSidebarOpen(true)}
                   onAgentProfile={handleAgentProfile}
                   onStatusChange={(id, status) => updateTask(id, { status })}
-                  onReorder={activeView.startsWith("agent:") ? reorderTasks : undefined}
+                  onReorder={activeView !== "done" && activeView !== "parked" ? reorderTasks : undefined}
                   onWakeTask={wakeTask}
                 />
               </div>

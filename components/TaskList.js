@@ -312,21 +312,19 @@ export default function TaskList({
 
   const isAgentView = activeView.startsWith("agent:");
   const sorted = [...activeTasks].sort((a, b) => {
-    if (isAgentView) {
-      // Agent views: respect sort_order fully so drag order is authoritative
-      const sA = a.sort_order, sB = b.sort_order;
-      if (sA != null && sB != null) return sA - sB;
-      if (sA != null) return -1;
-      if (sB != null) return 1;
-      return (a.task_number || 0) - (b.task_number || 0);
-    }
-    // All other views: priority first, then sort_order, then newest
-    const pA = PRI_ORDER[a.priority] ?? 3, pB = PRI_ORDER[b.priority] ?? 3;
-    if (pA !== pB) return pA - pB;
+    // sort_order is authoritative across all views -- drag order always wins
     const sA = a.sort_order, sB = b.sort_order;
     if (sA != null && sB != null) return sA - sB;
     if (sA != null) return -1;
     if (sB != null) return 1;
+    // Fallback when neither task has a sort_order yet
+    if (isAgentView) {
+      // Agent views: fall back to task number (queue order)
+      return (a.task_number || 0) - (b.task_number || 0);
+    }
+    // All other views: fall back to priority, then newest first
+    const pA = PRI_ORDER[a.priority] ?? 3, pB = PRI_ORDER[b.priority] ?? 3;
+    if (pA !== pB) return pA - pB;
     return new Date(b.created_at) - new Date(a.created_at);
   });
 
