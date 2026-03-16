@@ -175,6 +175,7 @@ function StatsBar({ stats, isMobile, onMenuOpen }) {
           ◈ MC
         </div>
       )}
+      <div style={{ flex: 1 }} />
       <StatChip value={stats.agentsActive} label="Agents Active" color="#10b981" />
       <StatChip value={stats.inQueue}      label="In Queue"      color="#c9a96e" />
       {stats.blocked > 0         && <StatChip value={stats.blocked}         label="Blocked" color="#ef4444" />}
