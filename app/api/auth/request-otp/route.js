@@ -11,7 +11,7 @@ export async function POST(request) {
     }
 
     // If LOGIN_EMAIL is set, only allow that address -- show error so mismatches are visible
-    const allowedEmail = process.env.LOGIN_EMAIL
+    const allowedEmail = (process.env.LOGIN_EMAIL || "").trim()
     if (allowedEmail && email.toLowerCase() !== allowedEmail.toLowerCase()) {
       console.log(`request-otp: email mismatch. received="${email}" allowed="${allowedEmail}"`)
       return NextResponse.json(

@@ -139,6 +139,9 @@ export default function LoginPage() {
                 placeholder="Enter your email"
                 autoFocus
                 autoComplete="email"
+                autoCorrect="off"
+                autoCapitalize="none"
+                spellCheck={false}
                 style={inputStyle}
               />
             </div>
