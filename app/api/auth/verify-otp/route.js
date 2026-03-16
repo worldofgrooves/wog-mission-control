@@ -39,8 +39,8 @@ export async function POST(request) {
     response.cookies.set('mc_session', sessionSecret, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 60 * 60 * 24 * 30, // 30 days
+      sameSite: 'lax',  // 'strict' breaks Safari web app launches from Dock/Home Screen
+      maxAge: 60 * 60 * 24 * 365, // 1 year
       path: '/',
     })
 
