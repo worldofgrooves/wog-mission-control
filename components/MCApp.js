@@ -81,9 +81,17 @@ export function filterTasks(tasks, view) {
         return false;
       });
     case "this-week":
-      return active.filter(t => t.deadline_at && new Date(t.deadline_at) >= now && new Date(t.deadline_at) <= weekEnd);
+      return active.filter(t => {
+        if (t.priority === "this_week") return true;
+        if (t.deadline_at) { const d = new Date(t.deadline_at); return d >= now && d <= weekEnd; }
+        return false;
+      });
     case "this-month":
-      return active.filter(t => t.deadline_at && new Date(t.deadline_at) >= now && new Date(t.deadline_at) <= monthEnd);
+      return active.filter(t => {
+        if (t.priority === "this_week") return true;
+        if (t.deadline_at) { const d = new Date(t.deadline_at); return d >= now && d <= monthEnd; }
+        return false;
+      });
     case "parked":
       return tasks.filter(t => t.status === "parked");
     case "done":
