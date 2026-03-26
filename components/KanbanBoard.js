@@ -1,6 +1,6 @@
 "use client";
 import { useState, useCallback } from "react";
-import { STATUS_COLOR, STATUS_LABEL, PRI_COLOR, BRAND_LABEL } from "./MCApp";
+import { STATUS_COLOR, STATUS_LABEL, PRI_COLOR, PRI_ORDER, BRAND_LABEL } from "./MCApp";
 
 // ─── Column order ──────────────────────────────────────────────────────────────
 
@@ -224,7 +224,7 @@ function KanbanColumn({ status, tasks, agents, selectedId, onTaskSelect, onStatu
 // ─── Kanban Board ──────────────────────────────────────────────────────────────
 
 export default function KanbanBoard({ tasks, agents, selectedId, onTaskSelect, onStatusChange }) {
-  // Group tasks by status
+  // Group tasks by status, sorted by priority within each column
   const grouped = {};
   for (const col of COLUMNS) grouped[col] = [];
   for (const t of tasks) {
@@ -233,6 +233,9 @@ export default function KanbanBoard({ tasks, agents, selectedId, onTaskSelect, o
     } else {
       grouped["inbox"].push(t); // fallback for unknown status
     }
+  }
+  for (const col of COLUMNS) {
+    grouped[col].sort((a, b) => (PRI_ORDER[a.priority] ?? 3) - (PRI_ORDER[b.priority] ?? 3));
   }
 
   return (
