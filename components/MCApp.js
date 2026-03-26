@@ -59,7 +59,7 @@ export const DEPT_LABEL = {
 export function filterTasks(tasks, view) {
   const now    = new Date();
   const todayS = now.toDateString();
-  const weekEnd = new Date(now); weekEnd.setDate(weekEnd.getDate() + (6 - now.getDay()) + 1);
+  const weekEnd = new Date(now); weekEnd.setDate(weekEnd.getDate() + (7 - now.getDay())); weekEnd.setHours(23, 59, 59, 999);
   const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
   const active = tasks.filter(t => t.status !== "done" && t.status !== "parked");
 
@@ -82,15 +82,15 @@ export function filterTasks(tasks, view) {
       });
     case "this-week":
       return active.filter(t => {
-        if (t.priority === "this_week") return true;
-        if (t.deadline_at) { const d = new Date(t.deadline_at); return d >= now && d <= weekEnd; }
-        return false;
+        if (!t.deadline_at) return false;
+        const d = new Date(t.deadline_at);
+        return d >= now && d <= weekEnd;
       });
     case "this-month":
       return active.filter(t => {
-        if (t.priority === "this_week") return true;
-        if (t.deadline_at) { const d = new Date(t.deadline_at); return d >= now && d <= monthEnd; }
-        return false;
+        if (!t.deadline_at) return false;
+        const d = new Date(t.deadline_at);
+        return d > weekEnd && d <= monthEnd;
       });
     case "parked":
       return tasks.filter(t => t.status === "parked");
