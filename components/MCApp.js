@@ -198,6 +198,14 @@ export default function MCApp() {
   const [isMobile,       setIsMobile]      = useState(false);
   const [isDesktop,      setIsDesktop]     = useState(false);
   const [profileAgentId, setProfileAgentId] = useState(null);
+  const [toast,          setToast]          = useState(null);
+
+  // Auto-dismiss toast
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), toast.type === "error" ? 5000 : 3000);
+    return () => clearTimeout(t);
+  }, [toast]);
 
   // ── Ideas state ──
   const [ideas,   setIdeas]   = useState([]);
@@ -466,12 +474,29 @@ export default function MCApp() {
   const wakeTask = useCallback(async (task) => {
     // Find the agent assigned to this task
     const agent = task.mc_agents || agents.find(a => a.id === task.assignee_agent_id);
-    if (!agent) return;
-    await fetch("/api/agents/wake", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ agentName: agent.name, taskNumber: task.task_number }),
-    });
+    if (!agent) {
+      console.error("[MC] Wake failed: no agent found for task", task.id, task.assignee_agent_id);
+      setToast({ msg: "No agent assigned to this task", type: "error" });
+      return;
+    }
+    try {
+      setToast({ msg: `Waking ${agent.display_name || agent.name}...`, type: "info" });
+      const res = await fetch("/api/agents/wake", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agentName: agent.name, taskNumber: task.task_number }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.ok) {
+        setToast({ msg: `${agent.display_name || agent.name} woken via ${data.method || "unknown"}`, type: "success" });
+      } else {
+        console.error("[MC] Wake API error:", res.status, data);
+        setToast({ msg: `Wake failed: ${data.error || res.statusText}`, type: "error" });
+      }
+    } catch (err) {
+      console.error("[MC] Wake fetch error:", err);
+      setToast({ msg: `Wake failed: ${err.message}`, type: "error" });
+    }
   }, [agents]);
 
   const addComment = useCallback(async (taskId, body) => {
@@ -534,6 +559,31 @@ export default function MCApp() {
       overflow: "hidden",
       color: "#f0f0f0",
     }}>
+      {/* ── Toast ── */}
+      {toast && (
+        <div
+          onClick={() => setToast(null)}
+          style={{
+            position: "fixed",
+            top: 16,
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 9999,
+            background: toast.type === "error" ? "#7f1d1d" : toast.type === "success" ? "#14532d" : "#1e293b",
+            color: toast.type === "error" ? "#fca5a5" : toast.type === "success" ? "#86efac" : "#94a3b8",
+            padding: "10px 20px",
+            borderRadius: 8,
+            fontSize: 14,
+            fontWeight: 500,
+            cursor: "pointer",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.5)",
+            maxWidth: "90vw",
+            textAlign: "center",
+          }}
+        >
+          {toast.msg}
+        </div>
+      )}
       {/* ── Stats bar ── */}
       <StatsBar stats={stats} isMobile={isMobile} onMenuOpen={() => setSidebarOpen(true)} />
 
