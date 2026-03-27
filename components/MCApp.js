@@ -185,6 +185,7 @@ function StatsBar({ stats, isMobile, onMenuOpen }) {
       )}
       <div style={{ flex: 1 }} />
       <StatChip value={stats.agentsActive} label="Agents Active" color="#10b981" />
+      {stats.agentsStuck > 0     && <StatChip value={stats.agentsStuck}     label="Stuck"   color="#ef4444" />}
       <StatChip value={stats.inQueue}      label="In Queue"      color="#c9a96e" />
       {stats.blocked > 0         && <StatChip value={stats.blocked}         label="Blocked" color="#ef4444" />}
       {stats.waitingOnDenver > 0 && <StatChip value={stats.waitingOnDenver} label="Waiting" color="#a855f7" />}
@@ -207,6 +208,7 @@ export default function MCApp() {
   const [isDesktop,      setIsDesktop]     = useState(false);
   const [profileAgentId, setProfileAgentId] = useState(null);
   const [toast,          setToast]          = useState(null);
+  const [heartbeats,     setHeartbeats]     = useState([]);
 
   // Auto-dismiss toast
   useEffect(() => {
@@ -247,7 +249,7 @@ export default function MCApp() {
 
   // Load all tasks (including parked) once on mount
   const loadAll = useCallback(async () => {
-    const [ag, tk, fo, id] = await Promise.all([
+    const [ag, tk, fo, id, hb] = await Promise.all([
       sb.from("mc_agents").select("*").order("display_name"),
       sb.from("mc_tasks")
         .select("*, mc_agents(id, name, display_name)")
@@ -255,11 +257,13 @@ export default function MCApp() {
         .order("created_at", { ascending: false }),
       sb.from("mc_idea_folders").select("*").order("sort_order"),
       sb.from("mc_ideas").select("*").order("created_at", { ascending: false }),
+      sb.from("agent_heartbeats").select("*"),
     ]);
     if (ag.data) setAgents(ag.data);
     if (tk.data) setTasks(tk.data);
     if (fo.data) setFolders(fo.data);
     if (id.data) setIdeas(id.data);
+    if (hb.data) setHeartbeats(hb.data);
     setLoading(false);
   }, []);
 
@@ -309,19 +313,17 @@ export default function MCApp() {
 
   // ── Global stats ──
   const stats = useMemo(() => {
-    const activeAgentIds = new Set(
-      tasks
-        .filter(t => t.status === "in_progress" || t.status === "assigned")
-        .filter(t => t.assignee_agent_id)
-        .map(t => t.assignee_agent_id)
-    );
+    // Use heartbeat data for active agent count when available
+    const workingFromHeartbeat = heartbeats.filter(h => h.status === "working").length;
+    const stuckCount = heartbeats.filter(h => h.status === "stuck").length;
     return {
-      agentsActive:    activeAgentIds.size,
+      agentsActive:    workingFromHeartbeat,
+      agentsStuck:     stuckCount,
       inQueue:         tasks.filter(t => t.status !== "done" && t.status !== "parked").length,
       blocked:         tasks.filter(t => t.status === "blocked").length,
       waitingOnDenver: tasks.filter(t => t.status === "waiting_on_denver").length,
     };
-  }, [tasks]);
+  }, [tasks, heartbeats]);
 
   // ── Mutations ──
   const updateTask = useCallback(async (id, fields) => {
@@ -624,6 +626,7 @@ export default function MCApp() {
         <Sidebar
           tasks={tasks}
           agents={agents}
+          heartbeats={heartbeats}
           activeView={activeView}
           onViewChange={handleViewChange}
           onClose={() => setSidebarOpen(false)}
@@ -744,6 +747,7 @@ export default function MCApp() {
           <AgentProfile
             agent={agent}
             tasks={tasks}
+            heartbeats={heartbeats}
             onClose={() => setProfileAgentId(null)}
           />
         ) : null;

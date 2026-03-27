@@ -28,7 +28,7 @@ const ARCHIVE_VIEWS = [
   { id: "done",   label: "Done" },
 ];
 
-export default function Sidebar({ tasks, agents, activeView, onViewChange, onClose, isMobile, onWakeAgent, folders, ideasCount, onAddFolder, onDeleteFolder }) {
+export default function Sidebar({ tasks, agents, heartbeats = [], activeView, onViewChange, onClose, isMobile, onWakeAgent, folders, ideasCount, onAddFolder, onDeleteFolder }) {
   const router = useRouter();
   const [ideasOpen, setIdeasOpen] = useState(
     activeView === "ideas:all" || activeView.startsWith("ideas:folder:")
@@ -255,11 +255,16 @@ export default function Sidebar({ tasks, agents, activeView, onViewChange, onClo
           {agents.map(a => {
             const id = `agent:${a.id}`;
             const isActive = activeView === id;
-            const agentTasks = tasks.filter(t => t.assignee_agent_id === a.id);
-            const isWorking  = agentTasks.some(t => t.status === "in_progress");
-            const isQueued   = agentTasks.some(t => t.status === "assigned");
-            const dotColor   = isWorking ? "#10b981" : isQueued ? "#c9a96e" : "#2a2a2a";
-            const dotGlow    = isWorking ? "0 0 6px #10b981" : "none";
+            const hb = heartbeats.find(h => h.agent_id === a.id);
+            const hbStatus = hb ? hb.status : "offline";
+            // Heartbeat-driven status dots
+            const dotColor = hbStatus === "working" ? "#10b981"
+              : hbStatus === "stuck" ? "#ef4444"
+              : hbStatus === "idle" ? "#3b82f6"
+              : "#2a2a2a"; // offline
+            const dotGlow = hbStatus === "working" ? "0 0 6px #10b981"
+              : hbStatus === "stuck" ? "0 0 6px #ef4444"
+              : "none";
             const count      = counts[id] || 0;
             return (
               <div key={id} style={{ position: "relative", display: "flex", alignItems: "center" }}
@@ -278,7 +283,7 @@ export default function Sidebar({ tasks, agents, activeView, onViewChange, onClo
                   }}
                 >
                   {/* Status dot */}
-                  <span style={{
+                  <span title={hbStatus + (hb && hb.current_task_title ? `: ${hb.current_task_title}` : "")} style={{
                     width: 20, display: "flex", alignItems: "center",
                     justifyContent: "center", flexShrink: 0,
                   }}>
@@ -296,6 +301,11 @@ export default function Sidebar({ tasks, agents, activeView, onViewChange, onClo
                     textOverflow: "ellipsis", whiteSpace: "nowrap",
                   }}>
                     {a.display_name}
+                    {hbStatus === "working" && hb && hb.current_task_number && (
+                      <span style={{ fontSize: 10, color: "#10b981", marginLeft: 6 }}>
+                        #{hb.current_task_number}
+                      </span>
+                    )}
                   </span>
                   {count > 0 && (
                     <span style={{
