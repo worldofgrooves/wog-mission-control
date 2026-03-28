@@ -127,10 +127,10 @@ export function getViewTitle(view, agents) {
     const rest = view.slice(6);
     if (rest.endsWith(":done")) {
       const id = rest.slice(0, -5);
-      const name = id === "unassigned" ? "Denver" : agents.find(a => a.id === id)?.display_name || "Agent";
+      const name = id === "unassigned" ? "Unassigned" : agents.find(a => a.id === id)?.display_name || "Agent";
       return `${name} -- Completed`;
     }
-    if (rest === "unassigned") return "Denver";
+    if (rest === "unassigned") return "Unassigned";
     return agents.find(a => a.id === rest)?.display_name || "Agent";
   }
   if (view.startsWith("brand:")) return BRAND_LABEL[view.slice(6)] || view.slice(6);
@@ -311,19 +311,23 @@ export default function MCApp() {
     [activeView, agents]
   );
 
-  // ── Global stats ──
+  // ── Global stats (derived from task data -- heartbeats not yet wired) ──
   const stats = useMemo(() => {
-    // Use heartbeat data for active agent count when available
-    const workingFromHeartbeat = heartbeats.filter(h => h.status === "working").length;
-    const stuckCount = heartbeats.filter(h => h.status === "stuck").length;
+    // Count agents that have at least one in_progress task
+    const agentIdsWorking = new Set();
+    const agentIdsStuck   = new Set();
+    for (const t of tasks) {
+      if (t.assignee_agent_id && t.status === "in_progress") agentIdsWorking.add(t.assignee_agent_id);
+      if (t.assignee_agent_id && t.status === "blocked")     agentIdsStuck.add(t.assignee_agent_id);
+    }
     return {
-      agentsActive:    workingFromHeartbeat,
-      agentsStuck:     stuckCount,
+      agentsActive:    agentIdsWorking.size,
+      agentsStuck:     agentIdsStuck.size,
       inQueue:         tasks.filter(t => t.status !== "done" && t.status !== "parked").length,
       blocked:         tasks.filter(t => t.status === "blocked").length,
       waitingOnDenver: tasks.filter(t => t.status === "waiting_on_denver").length,
     };
-  }, [tasks, heartbeats]);
+  }, [tasks]);
 
   // ── Mutations ──
   const updateTask = useCallback(async (id, fields) => {

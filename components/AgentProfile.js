@@ -18,19 +18,11 @@ const TIER_COLOR = {
 };
 
 function deriveStatus(agent, tasks, heartbeats = []) {
-  // Prefer heartbeat status when available
-  const hb = heartbeats.find(h => h.agent_id === agent.id);
-  if (hb) {
-    if (hb.status === "working") return "working";
-    if (hb.status === "stuck")   return "stuck";
-    if (hb.status === "idle")    return "idle";
-    if (hb.status === "offline") return "offline";
-  }
-  // Fallback to task-based status when no heartbeat data
-  const t = tasks.filter(x => x.assignee_agent_id === agent.id);
+  // Task-based status is the primary source of truth (heartbeats not yet wired)
+  const t = tasks.filter(x => x.assignee_agent_id === agent.id && x.status !== "done" && x.status !== "parked");
   if (t.some(x => x.status === "in_progress")) return "working";
   if (t.some(x => x.status === "blocked"))     return "blocked";
-  if (t.some(x => x.status === "assigned"))    return "standby";
+  if (t.some(x => x.status === "assigned" || x.status === "review" || x.status === "waiting_on_denver")) return "standby";
   return "idle";
 }
 
