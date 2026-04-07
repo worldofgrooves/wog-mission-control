@@ -8,9 +8,9 @@ import {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const STATUSES    = ["inbox","assigned","in_progress","blocked","review","waiting_on_denver","parked","done"];
+const STATUSES    = ["inbox","assigned","in_progress","blocked","review","waiting_on_denver","backlog","parked","done"];
 const PRIORITIES  = ["immediate","this_week","when_capacity"];
-const BRANDS      = ["wog","plume","artifact","groove_dwellers","shared"];
+const BRANDS      = ["wog","plume","artifact","groove_dwellers","shared","house","personal","studio"];
 const DEPARTMENTS = ["content","research","operations","build"];
 
 // ─── Field Row (icon + label + right-side control) ────────────────────────────
@@ -241,7 +241,7 @@ export default function TaskDetail({
   // Option lists
   const statusOptions = [{ value: "", label: "No status" }, ...STATUSES.map(s => ({ value: s, label: STATUS_LABEL[s] }))];
   const priOptions    = PRIORITIES.map(p => ({ value: p, label: PRI_LABEL[p] }));
-  const brandOptions  = [{ value: "", label: "No brand" }, ...BRANDS.map(b => ({ value: b, label: BRAND_LABEL[b] }))];
+  const brandOptions  = [{ value: "", label: "No area" }, ...BRANDS.map(b => ({ value: b, label: BRAND_LABEL[b] }))];
   const deptOptions   = [{ value: "", label: "No dept" }, ...DEPARTMENTS.map(d => ({ value: d, label: DEPT_LABEL[d] }))];
   const agentOptions  = [{ value: "", label: "Denver (me)" }, ...agents.map(a => ({ value: a.id, label: a.display_name }))];
 
@@ -442,7 +442,7 @@ export default function TaskDetail({
           />
         </FieldRow>
 
-        <FieldRow icon="◈" label="Brand">
+        <FieldRow icon="◈" label="Area">
           <RowSelect
             value={task.brand || ""}
             options={brandOptions}

@@ -11,6 +11,7 @@ const COLUMNS = [
   "blocked",
   "review",
   "waiting_on_denver",
+  "backlog",
   "done",
 ];
 

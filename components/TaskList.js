@@ -1,6 +1,6 @@
 "use client";
 import { useState, useRef, useEffect, useCallback } from "react";
-import { PRI_COLOR, PRI_ORDER, STATUS_COLOR, STATUS_LABEL, BRAND_LABEL } from "./MCApp";
+import { PRI_COLOR, PRI_ORDER, STATUS_COLOR, STATUS_LABEL, BRAND_LABEL, AREA_LABEL } from "./MCApp";
 import KanbanBoard from "./KanbanBoard";
 
 // ─── Task Card ────────────────────────────────────────────────────────────────
@@ -294,7 +294,7 @@ function SectionHeader({ label, count, color = "#666" }) {
   );
 }
 
-// ─── Time-based grouping for All Tasks view ─────────────────────────────────
+// ─── Time-based grouping for Planned view ───────────────────────────────────
 
 function groupByTimeHorizon(tasks) {
   const now     = new Date();
@@ -317,34 +317,40 @@ function groupByTimeHorizon(tasks) {
     const hasDL = !!task.deadline_at;
     const dl    = hasDL ? new Date(task.deadline_at) : null;
 
-    // Overdue: deadline in the past (and not today)
     if (hasDL && dl < now && dl.toDateString() !== todayS) {
       groups.overdue.tasks.push(task);
-    }
-    // Today: flagged_today or deadline is today
-    else if (task.flagged_today || (hasDL && dl.toDateString() === todayS)) {
+    } else if (task.flagged_today || (hasDL && dl.toDateString() === todayS)) {
       groups.today.tasks.push(task);
-    }
-    // This Week: deadline between now and end of week
-    else if (hasDL && dl >= now && dl <= weekEnd) {
+    } else if (hasDL && dl >= now && dl <= weekEnd) {
       groups.thisWeek.tasks.push(task);
-    }
-    // This Month: deadline between end of week and end of month
-    else if (hasDL && dl > weekEnd && dl <= monthEnd) {
+    } else if (hasDL && dl > weekEnd && dl <= monthEnd) {
       groups.thisMonth.tasks.push(task);
-    }
-    // Later: deadline beyond this month
-    else if (hasDL && dl > monthEnd) {
+    } else if (hasDL && dl > monthEnd) {
       groups.later.tasks.push(task);
-    }
-    // Unplanned: no deadline, not flagged
-    else {
+    } else {
       groups.unplanned.tasks.push(task);
     }
   }
 
-  // Return only non-empty groups in order
   return Object.values(groups).filter(g => g.tasks.length > 0);
+}
+
+// ─── Group by Area (for Backlog view) ────────────────────────────────────────
+
+function groupByArea(tasks) {
+  const areaOrder = ["wog", "plume", "house", "studio", "personal", "shared", "groove_dwellers", "artifact"];
+  const groups = {};
+
+  for (const task of tasks) {
+    const area = task.brand || "shared";
+    if (!groups[area]) groups[area] = { label: AREA_LABEL[area] || area, tasks: [] };
+    groups[area].tasks.push(task);
+  }
+
+  const ordered = areaOrder.filter(a => groups[a]).map(a => groups[a]);
+  const remaining = Object.keys(groups).filter(a => !areaOrder.includes(a));
+  for (const a of remaining) ordered.push(groups[a]);
+  return ordered;
 }
 
 // ─── Task List ────────────────────────────────────────────────────────────────
@@ -395,21 +401,19 @@ export default function TaskList({
 
   const isAgentView = activeView.startsWith("agent:");
   const sorted = [...activeTasks].sort((a, b) => {
-    // Priority is always the primary sort key (immediate > this_week > when_capacity)
-    const pA = PRI_ORDER[a.priority] ?? 3, pB = PRI_ORDER[b.priority] ?? 3;
-    if (pA !== pB) return pA - pB;
-    // Within same priority: agent views use sort_order (drag), others use created_at
-    if (isAgentView) {
-      const sA = a.sort_order, sB = b.sort_order;
-      if (sA != null && sB != null) return sA - sB;
-      if (sA != null) return -1;
-      if (sB != null) return 1;
-      return (a.task_number || 0) - (b.task_number || 0);
-    }
+    // sort_order is authoritative across all views -- drag order always wins
     const sA = a.sort_order, sB = b.sort_order;
     if (sA != null && sB != null) return sA - sB;
     if (sA != null) return -1;
     if (sB != null) return 1;
+    // Fallback when neither task has a sort_order yet
+    if (isAgentView) {
+      // Agent views: fall back to task number (queue order)
+      return (a.task_number || 0) - (b.task_number || 0);
+    }
+    // All other views: fall back to priority, then newest first
+    const pA = PRI_ORDER[a.priority] ?? 3, pB = PRI_ORDER[b.priority] ?? 3;
+    if (pA !== pB) return pA - pB;
     return new Date(b.created_at) - new Date(a.created_at);
   });
 
@@ -585,7 +589,7 @@ export default function TaskList({
           </div>
         )}
 
-        {/* Grouped rendering for All Tasks view */}
+        {/* Grouped rendering for Planned view (by time horizon) */}
         {activeView === "all" && sorted.length > 0 && (() => {
           const groups = groupByTimeHorizon(sorted);
           return groups.map(group => (
@@ -611,10 +615,35 @@ export default function TaskList({
           ));
         })()}
 
+        {/* Grouped rendering for Backlog view (by area) */}
+        {activeView === "backlog" && sorted.length > 0 && (() => {
+          const groups = groupByArea(sorted);
+          return groups.map(group => (
+            <div key={group.label}>
+              <SectionHeader label={group.label} count={group.tasks.length} />
+              {group.tasks.map(task => (
+                <div key={task.id} style={{ display: "flex", alignItems: "stretch" }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <TaskRow
+                      task={task}
+                      agents={agents}
+                      isSelected={task.id === selectedId}
+                      onSelect={onTaskSelect}
+                      onToggleComplete={onToggleComplete}
+                      onToggleStar={onToggleStar}
+                      onToggleMyDay={onToggleMyDay}
+                      onWakeTask={onWakeTask}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ));
+        })()}
+
         {/* Flat rendering for all other views */}
-        {activeView !== "all" && sorted.map((task, idx) => {
-          const isBeingDragged = false; // managed via direct DOM opacity in listener
-          const showDropLine   = dropIdx === idx && dragFromIdx.current !== null && dragFromIdx.current !== idx;
+        {activeView !== "all" && activeView !== "backlog" && sorted.map((task, idx) => {
+          const showDropLine = dropIdx === idx && dragFromIdx.current !== null && dragFromIdx.current !== idx;
 
           return (
             <div
@@ -626,7 +655,6 @@ export default function TaskList({
                 alignItems: "stretch",
               }}
             >
-              {/* Drop indicator line above this row */}
               {showDropLine && (
                 <div style={{
                   position: "absolute",
@@ -639,11 +667,9 @@ export default function TaskList({
                 }} />
               )}
 
-              {/* Drag handle -- only in reorderable views */}
               {onReorder && (
                 <DragHandle
                   onPointerDown={(e) => {
-                    // Only respond to primary pointer (left mouse or first touch)
                     if (e.button !== undefined && e.button !== 0) return;
                     e.currentTarget.setPointerCapture(e.pointerId);
                     dragFromIdx.current = idx;
@@ -652,14 +678,12 @@ export default function TaskList({
                 />
               )}
 
-              {/* Task row -- absorbs the rest of the width */}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <TaskRow
                   task={task}
                   agents={agents}
                   isSelected={task.id === selectedId}
                   onSelect={(t) => {
-                    // Suppress tap-select if we just finished a drag
                     if (isDragging.current) { isDragging.current = false; return; }
                     onTaskSelect(t);
                   }}

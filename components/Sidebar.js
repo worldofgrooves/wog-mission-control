@@ -1,7 +1,7 @@
 "use client";
 import { useMemo, useCallback, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { filterTasks, BRAND_LABEL } from "./MCApp";
+import { filterTasks } from "./MCApp";
 
 const SMART_VIEWS = [
   { id: "my-day",    label: "My Day",       icon: "☀" },
@@ -17,10 +17,13 @@ const TIME_VIEWS = [
   { id: "all",        label: "Planned" },
 ];
 
-const BRAND_VIEWS = [
-  { id: "brand:wog",    label: "World of Grooves" },
-  { id: "brand:plume",  label: "Plume Creative" },
-  { id: "brand:shared", label: "Shared" },
+const AREA_VIEWS = [
+  { id: "brand:wog",      label: "World of Grooves" },
+  { id: "brand:plume",    label: "Plume Creative" },
+  { id: "brand:shared",   label: "Shared" },
+  { id: "brand:house",    label: "House" },
+  { id: "brand:personal", label: "Personal" },
+  { id: "brand:studio",   label: "Studio" },
 ];
 
 const ARCHIVE_VIEWS = [
@@ -44,7 +47,7 @@ const TASK_STATUS_DOT = {
   idle:    { color: "#2a2a2a", glow: "none" },                // gray -- no active tasks
 };
 
-export default function Sidebar({ tasks, agents, heartbeats = [], activeView, onViewChange, onClose, isMobile, onWakeAgent, folders, ideasCount, onAddFolder, onDeleteFolder }) {
+export default function Sidebar({ tasks, agents, heartbeats = [], activeView, onViewChange, onClose, isMobile, onWakeAgent, folders, ideasCount, onAddFolder, onDeleteFolder, onDashOpen }) {
   const router = useRouter();
   const [ideasOpen, setIdeasOpen] = useState(
     activeView === "ideas:all" || activeView.startsWith("ideas:folder:")
@@ -82,8 +85,9 @@ export default function Sidebar({ tasks, agents, heartbeats = [], activeView, on
     const staticViews = [
       ...SMART_VIEWS.map(v => v.id),
       ...TIME_VIEWS.map(v => v.id),
-      ...BRAND_VIEWS.map(v => v.id),
+      ...AREA_VIEWS.map(v => v.id),
       ...ARCHIVE_VIEWS.map(v => v.id),
+      "backlog",
     ];
     for (const id of staticViews) {
       result[id] = filterTasks(tasks, id).length;
@@ -198,7 +202,7 @@ export default function Sidebar({ tasks, agents, heartbeats = [], activeView, on
       </div>
 
       {/* Scrollable nav */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "10px 8px 12px" }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: "10px 8px 12px", overscrollBehavior: "contain", WebkitOverflowScrolling: "touch" }}>
 
         {/* Smart views -- no section label, top level */}
         <div style={{ marginBottom: 8 }}>
@@ -211,6 +215,14 @@ export default function Sidebar({ tasks, agents, heartbeats = [], activeView, on
         <div style={{ marginBottom: 8 }}>
           <SectionLabel>Time</SectionLabel>
           {TIME_VIEWS.map(v => renderItem(v.id, v.label, null))}
+        </div>
+
+        <div style={{ height: 1, background: "#161616", margin: "6px 8px 10px" }} />
+
+        {/* Backlog */}
+        <div style={{ marginBottom: 8 }}>
+          <SectionLabel>Backlog</SectionLabel>
+          {renderItem("backlog", "All Backlog", "📋")}
         </div>
 
         <div style={{ height: 1, background: "#161616", margin: "6px 8px 10px" }} />
@@ -468,10 +480,10 @@ export default function Sidebar({ tasks, agents, heartbeats = [], activeView, on
 
         <div style={{ height: 1, background: "#161616", margin: "6px 8px 10px" }} />
 
-        {/* Brands */}
+        {/* Areas */}
         <div style={{ marginBottom: 8 }}>
-          <SectionLabel>Brands</SectionLabel>
-          {BRAND_VIEWS.map(v => renderItem(v.id, v.label, null))}
+          <SectionLabel>Areas</SectionLabel>
+          {AREA_VIEWS.map(v => renderItem(v.id, v.label, null))}
         </div>
 
         <div style={{ height: 1, background: "#161616", margin: "6px 8px 10px" }} />
@@ -483,12 +495,39 @@ export default function Sidebar({ tasks, agents, heartbeats = [], activeView, on
         </div>
       </div>
 
-      {/* Sign out */}
+      {/* Footer actions */}
       <div style={{
         padding: "10px 8px",
         borderTop: "1px solid #161616",
         flexShrink: 0,
       }}>
+        {/* Health dashboard */}
+        {onDashOpen && (
+          <button
+            onClick={() => { onDashOpen(); onClose?.(); }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              width: "100%",
+              padding: "10px 12px",
+              background: "transparent",
+              border: "none",
+              borderRadius: 8,
+              cursor: "pointer",
+              color: "#555",
+              fontSize: 14,
+              textAlign: "left",
+              transition: "color 0.1s",
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.color = "#c9a96e"}
+            onMouseLeave={(e) => e.currentTarget.style.color = "#555"}
+          >
+            <span style={{ width: 20, textAlign: "center", fontSize: 14, flexShrink: 0 }}>◉</span>
+            Dashboard
+          </button>
+        )}
+        {/* Sign out */}
         <button
           onClick={handleSignOut}
           style={{

@@ -26,6 +26,7 @@ export const STATUS_COLOR = {
   blocked:           "#ef4444",
   review:            "#f59e0b",
   waiting_on_denver: "#a855f7",
+  backlog:           "#8b5cf6",
   parked:            "#64748b",
   done:              "#10b981",
 };
@@ -36,17 +37,23 @@ export const STATUS_LABEL = {
   blocked:           "Blocked",
   review:            "Review",
   waiting_on_denver: "Waiting on Me",
+  backlog:           "Backlog",
   parked:            "Parked",
   done:              "Done",
 };
 
-export const BRAND_LABEL = {
+export const AREA_LABEL = {
   wog:             "World of Grooves",
   plume:           "Plume Creative",
   artifact:        "ArtiFact",
   groove_dwellers: "Groove Dwellers",
   shared:          "Shared",
+  house:           "House",
+  personal:        "Personal",
+  studio:          "Studio",
 };
+// Backwards-compatible alias
+export const BRAND_LABEL = AREA_LABEL;
 export const DEPT_LABEL = {
   content:    "Content",
   research:   "Research",
@@ -61,7 +68,7 @@ export function filterTasks(tasks, view) {
   const todayS = now.toDateString();
   const weekEnd = new Date(now); weekEnd.setDate(weekEnd.getDate() + (7 - now.getDay())); weekEnd.setHours(23, 59, 59, 999);
   const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
-  const active = tasks.filter(t => t.status !== "done" && t.status !== "parked");
+  const active = tasks.filter(t => t.status !== "done" && t.status !== "parked" && t.status !== "backlog");
 
   switch (view) {
     case "my-day":
@@ -92,6 +99,8 @@ export function filterTasks(tasks, view) {
         const d = new Date(t.deadline_at);
         return d > weekEnd && d <= monthEnd;
       });
+    case "backlog":
+      return tasks.filter(t => t.status === "backlog");
     case "parked":
       return tasks.filter(t => t.status === "parked");
     case "done":
@@ -109,7 +118,9 @@ export function filterTasks(tasks, view) {
         return active.filter(t => t.assignee_agent_id === rest);
       }
       if (view.startsWith("brand:")) {
-        return active.filter(t => t.brand === view.slice(6));
+        // Area views include backlog tasks (but not done/parked)
+        const areaActive = tasks.filter(t => t.status !== "done" && t.status !== "parked");
+        return areaActive.filter(t => t.brand === view.slice(6));
       }
       return active;
   }
@@ -120,7 +131,7 @@ export function getViewTitle(view, agents) {
     "my-day": "My Day", "important": "Important", "blocked": "Blocked",
     "waiting": "Waiting on Me", "all": "Planned",
     "today": "Today", "this-week": "This Week", "this-month": "This Month",
-    "parked": "Parked", "done": "Done",
+    "backlog": "Backlog", "parked": "Parked", "done": "Done",
   };
   if (map[view]) return map[view];
   if (view.startsWith("agent:")) {
@@ -133,7 +144,7 @@ export function getViewTitle(view, agents) {
     if (rest === "unassigned") return "Denver";
     return agents.find(a => a.id === rest)?.display_name || "Agent";
   }
-  if (view.startsWith("brand:")) return BRAND_LABEL[view.slice(6)] || view.slice(6);
+  if (view.startsWith("brand:")) return AREA_LABEL[view.slice(6)] || view.slice(6);
   return "Tasks";
 }
 
@@ -150,7 +161,7 @@ function StatChip({ value, label, color = "#c9a96e" }) {
   );
 }
 
-function StatsBar({ stats, isMobile, onMenuOpen }) {
+function StatsBar({ stats, isMobile, onMenuOpen, onDashOpen }) {
   return (
     <div style={{
       flexShrink: 0,
@@ -189,6 +200,30 @@ function StatsBar({ stats, isMobile, onMenuOpen }) {
       <StatChip value={stats.inQueue}      label="In Queue"      color="#c9a96e" />
       {stats.blocked > 0         && <StatChip value={stats.blocked}         label="Blocked" color="#ef4444" />}
       {stats.waitingOnDenver > 0 && <StatChip value={stats.waitingOnDenver} label="Waiting" color="#a855f7" />}
+      {/* Agent health dashboard button -- desktop only (mobile uses sidebar) */}
+      {!isMobile && (
+        <button
+          onClick={onDashOpen}
+          title="Open health dashboard"
+          style={{
+            background: "none",
+            border: "1px solid #222",
+            borderRadius: 6,
+            color: "#555",
+            fontSize: 13,
+            cursor: "pointer",
+            padding: "5px 10px",
+            lineHeight: 1,
+            letterSpacing: 0.5,
+            flexShrink: 0,
+            transition: "border-color 0.12s, color 0.12s",
+          }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = "#444"; e.currentTarget.style.color = "#c9a96e"; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = "#222"; e.currentTarget.style.color = "#555"; }}
+        >
+          ◉ Dashboard
+        </button>
+      )}
     </div>
   );
 }
@@ -199,6 +234,7 @@ export default function MCApp() {
   const [tasks,         setTasks]         = useState([]);
   const [agents,        setAgents]        = useState([]);
   const [loading,       setLoading]       = useState(true);
+  const [showDash,      setShowDash]      = useState(false);
   const [activeView,    setActiveView]    = useState("my-day");
   const [selectedId,    setSelectedId]    = useState(null);
   const [detailData,    setDetailData]    = useState(null);
@@ -231,6 +267,16 @@ export default function MCApp() {
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
   }, []);
+
+  // ── Lock body scroll when mobile sidebar is open ──
+  useEffect(() => {
+    if (isMobile && sidebarOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [isMobile, sidebarOpen]);
 
   // ── Load data ──
   const loadData = useCallback(async () => {
@@ -323,7 +369,7 @@ export default function MCApp() {
     return {
       agentsActive:    agentIdsWorking.size,
       agentsStuck:     agentIdsStuck.size,
-      inQueue:         tasks.filter(t => t.status !== "done" && t.status !== "parked").length,
+      inQueue:         tasks.filter(t => t.status !== "done" && t.status !== "parked" && t.status !== "backlog").length,
       blocked:         tasks.filter(t => t.status === "blocked").length,
       waitingOnDenver: tasks.filter(t => t.status === "waiting_on_denver").length,
     };
@@ -371,9 +417,13 @@ export default function MCApp() {
   }, [updateTask]);
 
   const toggleStar = useCallback(async (task) => {
-    await updateTask(task.id, {
-      priority: task.priority === "immediate" ? "this_week" : "immediate",
-    });
+    const isStarring = task.priority !== "immediate";
+    const fields = {
+      priority: isStarring ? "immediate" : "this_week",
+    };
+    // When starring: push to top of list by undercutting any existing sort_order
+    if (isStarring) fields.sort_order = 0;
+    await updateTask(task.id, fields);
   }, [updateTask]);
 
   const toggleMyDay = useCallback(async (task) => {
@@ -497,6 +547,7 @@ export default function MCApp() {
         fields.status = "assigned";
       }
     }
+    if (activeView === "backlog")          { fields.status = "backlog"; }
     if (activeView.startsWith("brand:")) fields.brand = activeView.slice(6);
 
     const { data, error } = await sb.from("mc_tasks")
@@ -621,7 +672,7 @@ export default function MCApp() {
         </div>
       )}
       {/* ── Stats bar ── */}
-      <StatsBar stats={stats} isMobile={isMobile} onMenuOpen={() => setSidebarOpen(true)} />
+      <StatsBar stats={stats} isMobile={isMobile} onMenuOpen={() => setSidebarOpen(true)} onDashOpen={() => setShowDash(true)} />
 
       {/* ── Main layout (sidebar + content) ── */}
       <div style={{ flex: 1, display: "flex", overflow: "hidden", minWidth: 0 }}>
@@ -661,6 +712,7 @@ export default function MCApp() {
           ideasCount={ideasCount}
           onAddFolder={addFolder}
           onDeleteFolder={deleteFolder}
+          onDashOpen={() => setShowDash(true)}
           onWakeAgent={async (agentName) => {
             await fetch("/api/agents/wake", {
               method: "POST",
@@ -718,7 +770,7 @@ export default function MCApp() {
                   onMenuOpen={() => setSidebarOpen(true)}
                   onAgentProfile={handleAgentProfile}
                   onStatusChange={(id, status) => updateTask(id, { status })}
-                  onReorder={activeView.startsWith("agent:") ? reorderTasks : undefined}
+                  onReorder={activeView !== "done" && activeView !== "parked" ? reorderTasks : undefined}
                   onWakeTask={wakeTask}
                 />
               </div>
@@ -778,6 +830,60 @@ export default function MCApp() {
           />
         ) : null;
       })()}
+
+      {/* ── Health dashboard overlay ── */}
+      {showDash && (
+        <div style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 100,
+          display: "flex",
+          flexDirection: "column",
+          background: "#000",
+        }}>
+          {/* Close bar */}
+          <div style={{
+            flexShrink: 0,
+            height: 48,
+            background: "#080808",
+            borderBottom: "1px solid #161616",
+            display: "flex",
+            alignItems: "center",
+            padding: "0 20px",
+            gap: 16,
+          }}>
+            <span style={{ fontSize: 9, color: "#c9a96e", letterSpacing: 3, fontWeight: 700 }}>
+              ◉ DASHBOARD
+            </span>
+            <div style={{ flex: 1 }} />
+            <button
+              onClick={() => setShowDash(false)}
+              style={{
+                background: "none", border: "none",
+                color: "#555", fontSize: 28, cursor: "pointer",
+                padding: "2px 8px", lineHeight: 1,
+                transition: "color 0.1s",
+              }}
+              onMouseEnter={e => e.currentTarget.style.color = "#aaa"}
+              onMouseLeave={e => e.currentTarget.style.color = "#555"}
+            >
+              ×
+            </button>
+          </div>
+          {/* iframe */}
+          <iframe
+            src={process.env.NEXT_PUBLIC_DASH_URL}
+            style={{
+              flex: 1,
+              border: "none",
+              width: "100%",
+              height: "100%",
+              background: "#000",
+            }}
+            title="Health Dashboard"
+          />
+        </div>
+      )}
     </div>
   );
 }
