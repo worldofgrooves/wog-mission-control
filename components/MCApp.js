@@ -26,6 +26,7 @@ export const STATUS_COLOR = {
   blocked:           "#ef4444",
   review:            "#f59e0b",
   waiting_on_denver: "#a855f7",
+  backlog:           "#8b5cf6",
   parked:            "#64748b",
   done:              "#10b981",
 };
@@ -36,17 +37,23 @@ export const STATUS_LABEL = {
   blocked:           "Blocked",
   review:            "Review",
   waiting_on_denver: "Waiting on Me",
+  backlog:           "Backlog",
   parked:            "Parked",
   done:              "Done",
 };
 
-export const BRAND_LABEL = {
+export const AREA_LABEL = {
   wog:             "World of Grooves",
   plume:           "Plume Creative",
   artifact:        "ArtiFact",
   groove_dwellers: "Groove Dwellers",
   shared:          "Shared",
+  house:           "House",
+  personal:        "Personal",
+  studio:          "Studio",
 };
+// Backwards-compatible alias
+export const BRAND_LABEL = AREA_LABEL;
 export const DEPT_LABEL = {
   content:    "Content",
   research:   "Research",
@@ -61,7 +68,7 @@ export function filterTasks(tasks, view) {
   const todayS = now.toDateString();
   const weekEnd = new Date(now); weekEnd.setDate(weekEnd.getDate() + (6 - now.getDay()) + 1);
   const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
-  const active = tasks.filter(t => t.status !== "done" && t.status !== "parked");
+  const active = tasks.filter(t => t.status !== "done" && t.status !== "parked" && t.status !== "backlog");
 
   switch (view) {
     case "my-day":
@@ -84,6 +91,8 @@ export function filterTasks(tasks, view) {
       return active.filter(t => t.deadline_at && new Date(t.deadline_at) >= now && new Date(t.deadline_at) <= weekEnd);
     case "this-month":
       return active.filter(t => t.deadline_at && new Date(t.deadline_at) >= now && new Date(t.deadline_at) <= monthEnd);
+    case "backlog":
+      return tasks.filter(t => t.status === "backlog");
     case "parked":
       return tasks.filter(t => t.status === "parked");
     case "done":
@@ -101,7 +110,9 @@ export function filterTasks(tasks, view) {
         return active.filter(t => t.assignee_agent_id === rest);
       }
       if (view.startsWith("brand:")) {
-        return active.filter(t => t.brand === view.slice(6));
+        // Area views include backlog tasks (but not done/parked)
+        const areaActive = tasks.filter(t => t.status !== "done" && t.status !== "parked");
+        return areaActive.filter(t => t.brand === view.slice(6));
       }
       return active;
   }
@@ -112,7 +123,7 @@ export function getViewTitle(view, agents) {
     "my-day": "My Day", "important": "Important", "blocked": "Blocked",
     "waiting": "Waiting on Me", "all": "All Tasks",
     "today": "Today", "this-week": "This Week", "this-month": "This Month",
-    "parked": "Parked", "done": "Done",
+    "backlog": "Backlog", "parked": "Parked", "done": "Done",
   };
   if (map[view]) return map[view];
   if (view.startsWith("agent:")) {
@@ -125,7 +136,7 @@ export function getViewTitle(view, agents) {
     if (rest === "unassigned") return "Denver";
     return agents.find(a => a.id === rest)?.display_name || "Agent";
   }
-  if (view.startsWith("brand:")) return BRAND_LABEL[view.slice(6)] || view.slice(6);
+  if (view.startsWith("brand:")) return AREA_LABEL[view.slice(6)] || view.slice(6);
   return "Tasks";
 }
 
@@ -336,7 +347,7 @@ export default function MCApp() {
     );
     return {
       agentsActive:    activeAgentIds.size,
-      inQueue:         tasks.filter(t => t.status !== "done" && t.status !== "parked").length,
+      inQueue:         tasks.filter(t => t.status !== "done" && t.status !== "parked" && t.status !== "backlog").length,
       blocked:         tasks.filter(t => t.status === "blocked").length,
       waitingOnDenver: tasks.filter(t => t.status === "waiting_on_denver").length,
     };
@@ -492,6 +503,7 @@ export default function MCApp() {
         fields.status = "assigned";
       }
     }
+    if (activeView === "backlog")          { fields.status = "backlog"; }
     if (activeView.startsWith("brand:")) fields.brand = activeView.slice(6);
 
     const { data, error } = await sb.from("mc_tasks")

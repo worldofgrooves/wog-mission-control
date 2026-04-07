@@ -1,7 +1,7 @@
 "use client";
 import { useMemo, useCallback, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { filterTasks, BRAND_LABEL } from "./MCApp";
+import { filterTasks } from "./MCApp";
 
 const SMART_VIEWS = [
   { id: "my-day",    label: "My Day",       icon: "☀" },
@@ -17,10 +17,13 @@ const TIME_VIEWS = [
   { id: "all",        label: "All Tasks" },
 ];
 
-const BRAND_VIEWS = [
-  { id: "brand:wog",    label: "World of Grooves" },
-  { id: "brand:plume",  label: "Plume Creative" },
-  { id: "brand:shared", label: "Shared" },
+const AREA_VIEWS = [
+  { id: "brand:wog",      label: "World of Grooves" },
+  { id: "brand:plume",    label: "Plume Creative" },
+  { id: "brand:shared",   label: "Shared" },
+  { id: "brand:house",    label: "House" },
+  { id: "brand:personal", label: "Personal" },
+  { id: "brand:studio",   label: "Studio" },
 ];
 
 const ARCHIVE_VIEWS = [
@@ -66,8 +69,9 @@ export default function Sidebar({ tasks, agents, activeView, onViewChange, onClo
     const staticViews = [
       ...SMART_VIEWS.map(v => v.id),
       ...TIME_VIEWS.map(v => v.id),
-      ...BRAND_VIEWS.map(v => v.id),
+      ...AREA_VIEWS.map(v => v.id),
       ...ARCHIVE_VIEWS.map(v => v.id),
+      "backlog",
     ];
     for (const id of staticViews) {
       result[id] = filterTasks(tasks, id).length;
@@ -195,6 +199,14 @@ export default function Sidebar({ tasks, agents, activeView, onViewChange, onClo
         <div style={{ marginBottom: 8 }}>
           <SectionLabel>Time</SectionLabel>
           {TIME_VIEWS.map(v => renderItem(v.id, v.label, null))}
+        </div>
+
+        <div style={{ height: 1, background: "#161616", margin: "6px 8px 10px" }} />
+
+        {/* Backlog */}
+        <div style={{ marginBottom: 8 }}>
+          <SectionLabel>Backlog</SectionLabel>
+          {renderItem("backlog", "All Backlog", "📋")}
         </div>
 
         <div style={{ height: 1, background: "#161616", margin: "6px 8px 10px" }} />
@@ -494,10 +506,10 @@ export default function Sidebar({ tasks, agents, activeView, onViewChange, onClo
 
         <div style={{ height: 1, background: "#161616", margin: "6px 8px 10px" }} />
 
-        {/* Brands */}
+        {/* Areas */}
         <div style={{ marginBottom: 8 }}>
-          <SectionLabel>Brands</SectionLabel>
-          {BRAND_VIEWS.map(v => renderItem(v.id, v.label, null))}
+          <SectionLabel>Areas</SectionLabel>
+          {AREA_VIEWS.map(v => renderItem(v.id, v.label, null))}
         </div>
 
         <div style={{ height: 1, background: "#161616", margin: "6px 8px 10px" }} />

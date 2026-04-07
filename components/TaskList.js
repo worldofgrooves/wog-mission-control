@@ -1,6 +1,6 @@
 "use client";
 import { useState, useRef, useEffect, useCallback } from "react";
-import { PRI_COLOR, PRI_ORDER, STATUS_COLOR, STATUS_LABEL, BRAND_LABEL } from "./MCApp";
+import { PRI_COLOR, PRI_ORDER, STATUS_COLOR, STATUS_LABEL, BRAND_LABEL, AREA_LABEL } from "./MCApp";
 import KanbanBoard from "./KanbanBoard";
 
 // ─── Task Card ────────────────────────────────────────────────────────────────
@@ -264,6 +264,26 @@ function ViewToggle({ viewMode, onChange }) {
   );
 }
 
+// ─── Group by Area (for Backlog view) ─────────────────────────────────────────
+
+function groupByArea(tasks) {
+  const areaOrder = ["wog", "plume", "house", "studio", "personal", "shared", "groove_dwellers", "artifact"];
+  const groups = {};
+
+  for (const task of tasks) {
+    const area = task.brand || "shared";
+    if (!groups[area]) groups[area] = { label: AREA_LABEL[area] || area, tasks: [] };
+    groups[area].tasks.push(task);
+  }
+
+  // Return in defined order, then any remaining
+  const ordered = areaOrder.filter(a => groups[a]).map(a => groups[a]);
+  // Include any areas not in the predefined order
+  const remaining = Object.keys(groups).filter(a => !areaOrder.includes(a));
+  for (const a of remaining) ordered.push(groups[a]);
+  return ordered;
+}
+
 // ─── Task List ────────────────────────────────────────────────────────────────
 
 export default function TaskList({
@@ -500,66 +520,100 @@ export default function TaskList({
           </div>
         )}
 
-        {sorted.map((task, idx) => {
-          const isBeingDragged = false; // managed via direct DOM opacity in listener
-          const showDropLine   = dropIdx === idx && dragFromIdx.current !== null && dragFromIdx.current !== idx;
-
-          return (
-            <div
-              key={task.id}
-              ref={el => { itemRefs.current[idx] = el; }}
-              style={{
-                position: "relative",
-                display: "flex",
-                alignItems: "stretch",
-              }}
-            >
-              {/* Drop indicator line above this row */}
-              {showDropLine && (
-                <div style={{
-                  position: "absolute",
-                  top: 0, left: 24, right: 24,
-                  height: 2,
-                  background: "#c9a96e",
-                  borderRadius: 1,
-                  zIndex: 10,
-                  pointerEvents: "none",
-                }} />
-              )}
-
-              {/* Drag handle -- only in reorderable views */}
-              {onReorder && (
-                <DragHandle
-                  onPointerDown={(e) => {
-                    // Only respond to primary pointer (left mouse or first touch)
-                    if (e.button !== undefined && e.button !== 0) return;
-                    e.currentTarget.setPointerCapture(e.pointerId);
-                    dragFromIdx.current = idx;
-                    isDragging.current  = false;
-                  }}
-                />
-              )}
-
-              {/* Task row -- absorbs the rest of the width */}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <TaskRow
-                  task={task}
-                  agents={agents}
-                  isSelected={task.id === selectedId}
-                  onSelect={(t) => {
-                    // Suppress tap-select if we just finished a drag
-                    if (isDragging.current) { isDragging.current = false; return; }
-                    onTaskSelect(t);
-                  }}
-                  onToggleComplete={onToggleComplete}
-                  onToggleStar={onToggleStar}
-                  onToggleMyDay={onToggleMyDay}
-                  onWakeTask={onWakeTask}
-                />
+        {/* Grouped rendering for backlog view */}
+        {activeView === "backlog" ? (
+          groupByArea(sorted).map(group => (
+            <div key={group.label}>
+              <div style={{
+                padding: "14px 20px 6px",
+                fontSize: 11,
+                color: "#555",
+                letterSpacing: 1.5,
+                fontWeight: 600,
+                textTransform: "uppercase",
+              }}>
+                {group.label}
               </div>
+              {group.tasks.map(task => (
+                <div key={task.id} style={{ display: "flex", alignItems: "stretch" }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <TaskRow
+                      task={task}
+                      agents={agents}
+                      isSelected={task.id === selectedId}
+                      onSelect={onTaskSelect}
+                      onToggleComplete={onToggleComplete}
+                      onToggleStar={onToggleStar}
+                      onToggleMyDay={onToggleMyDay}
+                      onWakeTask={onWakeTask}
+                    />
+                  </div>
+                </div>
+              ))}
             </div>
-          );
-        })}
+          ))
+        ) : (
+          sorted.map((task, idx) => {
+            const isBeingDragged = false; // managed via direct DOM opacity in listener
+            const showDropLine   = dropIdx === idx && dragFromIdx.current !== null && dragFromIdx.current !== idx;
+
+            return (
+              <div
+                key={task.id}
+                ref={el => { itemRefs.current[idx] = el; }}
+                style={{
+                  position: "relative",
+                  display: "flex",
+                  alignItems: "stretch",
+                }}
+              >
+                {/* Drop indicator line above this row */}
+                {showDropLine && (
+                  <div style={{
+                    position: "absolute",
+                    top: 0, left: 24, right: 24,
+                    height: 2,
+                    background: "#c9a96e",
+                    borderRadius: 1,
+                    zIndex: 10,
+                    pointerEvents: "none",
+                  }} />
+                )}
+
+                {/* Drag handle -- only in reorderable views */}
+                {onReorder && (
+                  <DragHandle
+                    onPointerDown={(e) => {
+                      // Only respond to primary pointer (left mouse or first touch)
+                      if (e.button !== undefined && e.button !== 0) return;
+                      e.currentTarget.setPointerCapture(e.pointerId);
+                      dragFromIdx.current = idx;
+                      isDragging.current  = false;
+                    }}
+                  />
+                )}
+
+                {/* Task row -- absorbs the rest of the width */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <TaskRow
+                    task={task}
+                    agents={agents}
+                    isSelected={task.id === selectedId}
+                    onSelect={(t) => {
+                      // Suppress tap-select if we just finished a drag
+                      if (isDragging.current) { isDragging.current = false; return; }
+                      onTaskSelect(t);
+                    }}
+                    onToggleComplete={onToggleComplete}
+                    onToggleStar={onToggleStar}
+                    onToggleMyDay={onToggleMyDay}
+                    onWakeTask={onWakeTask}
+                  />
+                </div>
+              </div>
+            );
+          })
+        )}
 
         {/* Completed -- pill button */}
         {doneTasks.length > 0 && (
