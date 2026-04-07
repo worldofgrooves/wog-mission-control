@@ -14,7 +14,7 @@ const TIME_VIEWS = [
   { id: "today",      label: "Today" },
   { id: "this-week",  label: "This Week" },
   { id: "this-month", label: "This Month" },
-  { id: "all",        label: "All Tasks" },
+  { id: "all",        label: "Planned" },
 ];
 
 const BRAND_VIEWS = [
@@ -218,7 +218,7 @@ export default function Sidebar({ tasks, agents, heartbeats = [], activeView, on
         {/* Agents */}
         <div style={{ marginBottom: 8 }}>
           <SectionLabel>Agents</SectionLabel>
-          {renderItem("agent:unassigned", "Unassigned", "○")}
+          {renderItem("agent:unassigned", "Denver", "◈")}
           {agents.map(a => {
             const id = `agent:${a.id}`;
             const isActive = activeView === id;

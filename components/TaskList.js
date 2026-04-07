@@ -264,6 +264,89 @@ function ViewToggle({ viewMode, onChange }) {
   );
 }
 
+// ─── Section Header ──────────────────────────────────────────────────────────
+
+function SectionHeader({ label, count, color = "#666" }) {
+  return (
+    <div style={{
+      display: "flex",
+      alignItems: "center",
+      gap: 8,
+      padding: "16px 24px 6px",
+    }}>
+      <span style={{
+        fontSize: 13,
+        fontWeight: 600,
+        color,
+        letterSpacing: 0.5,
+      }}>
+        {label}
+      </span>
+      {count > 0 && (
+        <span style={{
+          fontSize: 12,
+          color: "#444",
+        }}>
+          {count}
+        </span>
+      )}
+    </div>
+  );
+}
+
+// ─── Time-based grouping for All Tasks view ─────────────────────────────────
+
+function groupByTimeHorizon(tasks) {
+  const now     = new Date();
+  const todayS  = now.toDateString();
+  const weekEnd = new Date(now);
+  weekEnd.setDate(weekEnd.getDate() + (7 - now.getDay()));
+  weekEnd.setHours(23, 59, 59, 999);
+  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+
+  const groups = {
+    overdue:   { label: "Overdue",   color: "#ef4444", tasks: [] },
+    today:     { label: "Today",     color: "#f59e0b", tasks: [] },
+    thisWeek:  { label: "This Week", color: "#c9a96e", tasks: [] },
+    thisMonth: { label: "This Month",color: "#888",    tasks: [] },
+    later:     { label: "Later",     color: "#555",    tasks: [] },
+    unplanned: { label: "Unplanned", color: "#333",    tasks: [] },
+  };
+
+  for (const task of tasks) {
+    const hasDL = !!task.deadline_at;
+    const dl    = hasDL ? new Date(task.deadline_at) : null;
+
+    // Overdue: deadline in the past (and not today)
+    if (hasDL && dl < now && dl.toDateString() !== todayS) {
+      groups.overdue.tasks.push(task);
+    }
+    // Today: flagged_today or deadline is today
+    else if (task.flagged_today || (hasDL && dl.toDateString() === todayS)) {
+      groups.today.tasks.push(task);
+    }
+    // This Week: deadline between now and end of week
+    else if (hasDL && dl >= now && dl <= weekEnd) {
+      groups.thisWeek.tasks.push(task);
+    }
+    // This Month: deadline between end of week and end of month
+    else if (hasDL && dl > weekEnd && dl <= monthEnd) {
+      groups.thisMonth.tasks.push(task);
+    }
+    // Later: deadline beyond this month
+    else if (hasDL && dl > monthEnd) {
+      groups.later.tasks.push(task);
+    }
+    // Unplanned: no deadline, not flagged
+    else {
+      groups.unplanned.tasks.push(task);
+    }
+  }
+
+  // Return only non-empty groups in order
+  return Object.values(groups).filter(g => g.tasks.length > 0);
+}
+
 // ─── Task List ────────────────────────────────────────────────────────────────
 
 export default function TaskList({
@@ -502,7 +585,34 @@ export default function TaskList({
           </div>
         )}
 
-        {sorted.map((task, idx) => {
+        {/* Grouped rendering for All Tasks view */}
+        {activeView === "all" && sorted.length > 0 && (() => {
+          const groups = groupByTimeHorizon(sorted);
+          return groups.map(group => (
+            <div key={group.label}>
+              <SectionHeader label={group.label} count={group.tasks.length} color={group.color} />
+              {group.tasks.map(task => (
+                <div key={task.id} style={{ display: "flex", alignItems: "stretch" }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <TaskRow
+                      task={task}
+                      agents={agents}
+                      isSelected={task.id === selectedId}
+                      onSelect={onTaskSelect}
+                      onToggleComplete={onToggleComplete}
+                      onToggleStar={onToggleStar}
+                      onToggleMyDay={onToggleMyDay}
+                      onWakeTask={onWakeTask}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ));
+        })()}
+
+        {/* Flat rendering for all other views */}
+        {activeView !== "all" && sorted.map((task, idx) => {
           const isBeingDragged = false; // managed via direct DOM opacity in listener
           const showDropLine   = dropIdx === idx && dragFromIdx.current !== null && dragFromIdx.current !== idx;
 

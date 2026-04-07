@@ -118,7 +118,7 @@ export function filterTasks(tasks, view) {
 export function getViewTitle(view, agents) {
   const map = {
     "my-day": "My Day", "important": "Important", "blocked": "Blocked",
-    "waiting": "Waiting on Me", "all": "All Tasks",
+    "waiting": "Waiting on Me", "all": "Planned",
     "today": "Today", "this-week": "This Week", "this-month": "This Month",
     "parked": "Parked", "done": "Done",
   };
@@ -127,10 +127,10 @@ export function getViewTitle(view, agents) {
     const rest = view.slice(6);
     if (rest.endsWith(":done")) {
       const id = rest.slice(0, -5);
-      const name = id === "unassigned" ? "Unassigned" : agents.find(a => a.id === id)?.display_name || "Agent";
+      const name = id === "unassigned" ? "Denver" : agents.find(a => a.id === id)?.display_name || "Agent";
       return `${name} -- Completed`;
     }
-    if (rest === "unassigned") return "Unassigned";
+    if (rest === "unassigned") return "Denver";
     return agents.find(a => a.id === rest)?.display_name || "Agent";
   }
   if (view.startsWith("brand:")) return BRAND_LABEL[view.slice(6)] || view.slice(6);
