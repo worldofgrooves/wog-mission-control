@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-const sb = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-);
+// Lazy-init to avoid build-time crash when env vars aren't available
+let _sb;
+function sb() {
+  if (!_sb) _sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+  return _sb;
+}
 
 // Map MC agent names to ClaudeClaw agent IDs (folder names)
 const MC_TO_CLAUDECLAW = {
@@ -37,7 +39,7 @@ export async function POST(request) {
     // If a specific task was requested, fetch it for the targeted message
     let targetTask = null;
     if (taskNumber) {
-      const { data: td } = await sb
+      const { data: td } = await sb()
         .from("mc_tasks")
         .select("task_number, title, description, status, priority")
         .eq("task_number", taskNumber)
@@ -46,7 +48,7 @@ export async function POST(request) {
     }
 
     // Look up agent display name for the response
-    const { data: agent, error: agentErr } = await sb
+    const { data: agent, error: agentErr } = await sb()
       .from("mc_agents")
       .select("name, display_name, telegram_chat_id, telegram_bot_token_env")
       .eq("name", agentName)
