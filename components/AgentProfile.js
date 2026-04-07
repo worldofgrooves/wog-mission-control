@@ -17,24 +17,27 @@ const TIER_COLOR = {
   haiku:  "#06b6d4",
 };
 
-function deriveStatus(agent, tasks) {
-  const t = tasks.filter(x => x.assignee_agent_id === agent.id);
+function deriveStatus(agent, tasks, heartbeats = []) {
+  // Task-based status is the primary source of truth (heartbeats not yet wired)
+  const t = tasks.filter(x => x.assignee_agent_id === agent.id && x.status !== "done" && x.status !== "parked");
   if (t.some(x => x.status === "in_progress")) return "working";
   if (t.some(x => x.status === "blocked"))     return "blocked";
-  if (t.some(x => x.status === "assigned"))    return "standby";
+  if (t.some(x => x.status === "assigned" || x.status === "review" || x.status === "waiting_on_denver")) return "standby";
   return "idle";
 }
 
 const STATUS_INFO = {
   working: { color: "#10b981", label: "WORKING" },
+  stuck:   { color: "#ef4444", label: "STUCK" },
   blocked: { color: "#ef4444", label: "BLOCKED" },
   standby: { color: "#f59e0b", label: "STANDBY" },
-  idle:    { color: "#555",    label: "IDLE" },
+  idle:    { color: "#3b82f6", label: "IDLE" },
+  offline: { color: "#555",    label: "OFFLINE" },
 };
 
 // ─── AgentProfile ─────────────────────────────────────────────────────────────
 
-export default function AgentProfile({ agent, tasks, onClose }) {
+export default function AgentProfile({ agent, tasks, heartbeats = [], onClose }) {
   const [wakeState, setWakeState] = useState("idle"); // idle | sending | sent | error
   const [wakeError, setWakeError] = useState("");
 
@@ -63,7 +66,7 @@ export default function AgentProfile({ agent, tasks, onClose }) {
     }
   }, [agent.name]);
 
-  const status     = useMemo(() => deriveStatus(agent, tasks), [agent, tasks]);
+  const status     = useMemo(() => deriveStatus(agent, tasks, heartbeats), [agent, tasks, heartbeats]);
   const statusInfo = STATUS_INFO[status];
   const deptColor  = DEPT_COLOR[agent.department] || "#c9a96e";
   const initials   = agent.avatar || agent.display_name?.slice(0, 2).toUpperCase() || "??";

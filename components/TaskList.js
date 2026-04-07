@@ -264,7 +264,78 @@ function ViewToggle({ viewMode, onChange }) {
   );
 }
 
-// ─── Group by Area (for Backlog view) ─────────────────────────────────────────
+// ─── Section Header ──────────────────────────────────────────────────────────
+
+function SectionHeader({ label, count, color = "#666" }) {
+  return (
+    <div style={{
+      display: "flex",
+      alignItems: "center",
+      gap: 8,
+      padding: "16px 24px 6px",
+    }}>
+      <span style={{
+        fontSize: 13,
+        fontWeight: 600,
+        color,
+        letterSpacing: 0.5,
+      }}>
+        {label}
+      </span>
+      {count > 0 && (
+        <span style={{
+          fontSize: 12,
+          color: "#444",
+        }}>
+          {count}
+        </span>
+      )}
+    </div>
+  );
+}
+
+// ─── Time-based grouping for Planned view ───────────────────────────────────
+
+function groupByTimeHorizon(tasks) {
+  const now     = new Date();
+  const todayS  = now.toDateString();
+  const weekEnd = new Date(now);
+  weekEnd.setDate(weekEnd.getDate() + (7 - now.getDay()));
+  weekEnd.setHours(23, 59, 59, 999);
+  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+
+  const groups = {
+    overdue:   { label: "Overdue",   color: "#ef4444", tasks: [] },
+    today:     { label: "Today",     color: "#f59e0b", tasks: [] },
+    thisWeek:  { label: "This Week", color: "#c9a96e", tasks: [] },
+    thisMonth: { label: "This Month",color: "#888",    tasks: [] },
+    later:     { label: "Later",     color: "#555",    tasks: [] },
+    unplanned: { label: "Unplanned", color: "#333",    tasks: [] },
+  };
+
+  for (const task of tasks) {
+    const hasDL = !!task.deadline_at;
+    const dl    = hasDL ? new Date(task.deadline_at) : null;
+
+    if (hasDL && dl < now && dl.toDateString() !== todayS) {
+      groups.overdue.tasks.push(task);
+    } else if (task.flagged_today || (hasDL && dl.toDateString() === todayS)) {
+      groups.today.tasks.push(task);
+    } else if (hasDL && dl >= now && dl <= weekEnd) {
+      groups.thisWeek.tasks.push(task);
+    } else if (hasDL && dl > weekEnd && dl <= monthEnd) {
+      groups.thisMonth.tasks.push(task);
+    } else if (hasDL && dl > monthEnd) {
+      groups.later.tasks.push(task);
+    } else {
+      groups.unplanned.tasks.push(task);
+    }
+  }
+
+  return Object.values(groups).filter(g => g.tasks.length > 0);
+}
+
+// ─── Group by Area (for Backlog view) ────────────────────────────────────────
 
 function groupByArea(tasks) {
   const areaOrder = ["wog", "plume", "house", "studio", "personal", "shared", "groove_dwellers", "artifact"];
@@ -276,9 +347,7 @@ function groupByArea(tasks) {
     groups[area].tasks.push(task);
   }
 
-  // Return in defined order, then any remaining
   const ordered = areaOrder.filter(a => groups[a]).map(a => groups[a]);
-  // Include any areas not in the predefined order
   const remaining = Object.keys(groups).filter(a => !areaOrder.includes(a));
   for (const a of remaining) ordered.push(groups[a]);
   return ordered;
@@ -520,20 +589,12 @@ export default function TaskList({
           </div>
         )}
 
-        {/* Grouped rendering for backlog view */}
-        {activeView === "backlog" ? (
-          groupByArea(sorted).map(group => (
+        {/* Grouped rendering for Planned view (by time horizon) */}
+        {activeView === "all" && sorted.length > 0 && (() => {
+          const groups = groupByTimeHorizon(sorted);
+          return groups.map(group => (
             <div key={group.label}>
-              <div style={{
-                padding: "14px 20px 6px",
-                fontSize: 11,
-                color: "#555",
-                letterSpacing: 1.5,
-                fontWeight: 600,
-                textTransform: "uppercase",
-              }}>
-                {group.label}
-              </div>
+              <SectionHeader label={group.label} count={group.tasks.length} color={group.color} />
               {group.tasks.map(task => (
                 <div key={task.id} style={{ display: "flex", alignItems: "stretch" }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
@@ -551,69 +612,90 @@ export default function TaskList({
                 </div>
               ))}
             </div>
-          ))
-        ) : (
-          sorted.map((task, idx) => {
-            const isBeingDragged = false; // managed via direct DOM opacity in listener
-            const showDropLine   = dropIdx === idx && dragFromIdx.current !== null && dragFromIdx.current !== idx;
+          ));
+        })()}
 
-            return (
-              <div
-                key={task.id}
-                ref={el => { itemRefs.current[idx] = el; }}
-                style={{
-                  position: "relative",
-                  display: "flex",
-                  alignItems: "stretch",
-                }}
-              >
-                {/* Drop indicator line above this row */}
-                {showDropLine && (
-                  <div style={{
-                    position: "absolute",
-                    top: 0, left: 24, right: 24,
-                    height: 2,
-                    background: "#c9a96e",
-                    borderRadius: 1,
-                    zIndex: 10,
-                    pointerEvents: "none",
-                  }} />
-                )}
-
-                {/* Drag handle -- only in reorderable views */}
-                {onReorder && (
-                  <DragHandle
-                    onPointerDown={(e) => {
-                      // Only respond to primary pointer (left mouse or first touch)
-                      if (e.button !== undefined && e.button !== 0) return;
-                      e.currentTarget.setPointerCapture(e.pointerId);
-                      dragFromIdx.current = idx;
-                      isDragging.current  = false;
-                    }}
-                  />
-                )}
-
-                {/* Task row -- absorbs the rest of the width */}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <TaskRow
-                    task={task}
-                    agents={agents}
-                    isSelected={task.id === selectedId}
-                    onSelect={(t) => {
-                      // Suppress tap-select if we just finished a drag
-                      if (isDragging.current) { isDragging.current = false; return; }
-                      onTaskSelect(t);
-                    }}
-                    onToggleComplete={onToggleComplete}
-                    onToggleStar={onToggleStar}
-                    onToggleMyDay={onToggleMyDay}
-                    onWakeTask={onWakeTask}
-                  />
+        {/* Grouped rendering for Backlog view (by area) */}
+        {activeView === "backlog" && sorted.length > 0 && (() => {
+          const groups = groupByArea(sorted);
+          return groups.map(group => (
+            <div key={group.label}>
+              <SectionHeader label={group.label} count={group.tasks.length} />
+              {group.tasks.map(task => (
+                <div key={task.id} style={{ display: "flex", alignItems: "stretch" }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <TaskRow
+                      task={task}
+                      agents={agents}
+                      isSelected={task.id === selectedId}
+                      onSelect={onTaskSelect}
+                      onToggleComplete={onToggleComplete}
+                      onToggleStar={onToggleStar}
+                      onToggleMyDay={onToggleMyDay}
+                      onWakeTask={onWakeTask}
+                    />
+                  </div>
                 </div>
+              ))}
+            </div>
+          ));
+        })()}
+
+        {/* Flat rendering for all other views */}
+        {activeView !== "all" && activeView !== "backlog" && sorted.map((task, idx) => {
+          const showDropLine = dropIdx === idx && dragFromIdx.current !== null && dragFromIdx.current !== idx;
+
+          return (
+            <div
+              key={task.id}
+              ref={el => { itemRefs.current[idx] = el; }}
+              style={{
+                position: "relative",
+                display: "flex",
+                alignItems: "stretch",
+              }}
+            >
+              {showDropLine && (
+                <div style={{
+                  position: "absolute",
+                  top: 0, left: 24, right: 24,
+                  height: 2,
+                  background: "#c9a96e",
+                  borderRadius: 1,
+                  zIndex: 10,
+                  pointerEvents: "none",
+                }} />
+              )}
+
+              {onReorder && (
+                <DragHandle
+                  onPointerDown={(e) => {
+                    if (e.button !== undefined && e.button !== 0) return;
+                    e.currentTarget.setPointerCapture(e.pointerId);
+                    dragFromIdx.current = idx;
+                    isDragging.current  = false;
+                  }}
+                />
+              )}
+
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <TaskRow
+                  task={task}
+                  agents={agents}
+                  isSelected={task.id === selectedId}
+                  onSelect={(t) => {
+                    if (isDragging.current) { isDragging.current = false; return; }
+                    onTaskSelect(t);
+                  }}
+                  onToggleComplete={onToggleComplete}
+                  onToggleStar={onToggleStar}
+                  onToggleMyDay={onToggleMyDay}
+                  onWakeTask={onWakeTask}
+                />
               </div>
-            );
-          })
-        )}
+            </div>
+          );
+        })}
 
         {/* Completed -- pill button */}
         {doneTasks.length > 0 && (

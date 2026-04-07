@@ -14,7 +14,7 @@ const TIME_VIEWS = [
   { id: "today",      label: "Today" },
   { id: "this-week",  label: "This Week" },
   { id: "this-month", label: "This Month" },
-  { id: "all",        label: "All Tasks" },
+  { id: "all",        label: "Planned" },
 ];
 
 const AREA_VIEWS = [
@@ -31,7 +31,23 @@ const ARCHIVE_VIEWS = [
   { id: "done",   label: "Done" },
 ];
 
-export default function Sidebar({ tasks, agents, activeView, onViewChange, onClose, isMobile, onWakeAgent, folders, ideasCount, onAddFolder, onDeleteFolder, onDashOpen }) {
+// Derive agent status from task data (reliable) instead of heartbeats (not wired yet)
+function getAgentTaskStatus(agentId, tasks) {
+  const agentTasks = tasks.filter(t => t.assignee_agent_id === agentId && t.status !== "done" && t.status !== "parked");
+  if (agentTasks.some(t => t.status === "in_progress")) return "working";
+  if (agentTasks.some(t => t.status === "blocked"))     return "stuck";
+  if (agentTasks.some(t => t.status === "assigned" || t.status === "review" || t.status === "waiting_on_denver")) return "queued";
+  return "idle";
+}
+
+const TASK_STATUS_DOT = {
+  working: { color: "#10b981", glow: "0 0 6px #10b981" },   // green -- actively working
+  stuck:   { color: "#ef4444", glow: "0 0 6px #ef4444" },   // red -- blocked
+  queued:  { color: "#f59e0b", glow: "none" },                // yellow -- has tasks but none in_progress
+  idle:    { color: "#2a2a2a", glow: "none" },                // gray -- no active tasks
+};
+
+export default function Sidebar({ tasks, agents, heartbeats = [], activeView, onViewChange, onClose, isMobile, onWakeAgent, folders, ideasCount, onAddFolder, onDeleteFolder, onDashOpen }) {
   const router = useRouter();
   const [ideasOpen, setIdeasOpen] = useState(
     activeView === "ideas:all" || activeView.startsWith("ideas:folder:")
@@ -214,65 +230,18 @@ export default function Sidebar({ tasks, agents, activeView, onViewChange, onClo
         {/* Agents */}
         <div style={{ marginBottom: 8 }}>
           <SectionLabel>Agents</SectionLabel>
-          {(() => {
-            const id = "agent:unassigned";
-            const isActive = activeView === id;
-            const count = counts[id] || 0;
-            return (
-              <button
-                key={id}
-                onClick={() => onViewChange(id)}
-                style={{
-                  display: "flex", alignItems: "center", gap: 10,
-                  width: "100%", padding: "10px 12px",
-                  background: isActive ? "rgba(201,169,110,0.14)" : "transparent",
-                  border: "none", borderRadius: 8, cursor: "pointer",
-                  color: isActive ? "#c9a96e" : "#c8c8c8",
-                  fontSize: 16, textAlign: "left",
-                  transition: "background 0.1s, color 0.1s",
-                  fontWeight: isActive ? 500 : 400,
-                }}
-              >
-                {/* Gold dot -- Denver is always present */}
-                <span style={{
-                  width: 20, display: "flex", alignItems: "center",
-                  justifyContent: "center", flexShrink: 0,
-                }}>
-                  <span style={{
-                    display: "inline-block",
-                    width: 7, height: 7, borderRadius: "50%",
-                    background: "#c9a96e",
-                    boxShadow: "0 0 6px #c9a96e88",
-                    flexShrink: 0,
-                  }} />
-                </span>
-                <span style={{
-                  flex: 1, overflow: "hidden",
-                  textOverflow: "ellipsis", whiteSpace: "nowrap",
-                }}>
-                  Denver
-                </span>
-                {count > 0 && (
-                  <span style={{
-                    fontSize: 14,
-                    color: isActive ? "#c9a96e" : "#666",
-                    minWidth: 20, textAlign: "right", flexShrink: 0,
-                  }}>
-                    {count}
-                  </span>
-                )}
-              </button>
-            );
-          })()}
+          {renderItem("agent:unassigned", "Denver", "◈")}
           {agents.map(a => {
             const id = `agent:${a.id}`;
             const isActive = activeView === id;
-            const agentTasks = tasks.filter(t => t.assignee_agent_id === a.id);
-            const isWorking  = agentTasks.some(t => t.status === "in_progress");
-            const isQueued   = agentTasks.some(t => t.status === "assigned");
-            const dotColor   = isWorking ? "#10b981" : isQueued ? "#c9a96e" : "#2a2a2a";
-            const dotGlow    = isWorking ? "0 0 6px #10b981" : "none";
-            const count      = counts[id] || 0;
+            // Task-derived status (reliable -- no heartbeat dependency)
+            const taskStatus = getAgentTaskStatus(a.id, tasks);
+            const dot = TASK_STATUS_DOT[taskStatus];
+            const count = counts[id] || 0;
+            // Find the in_progress task number for working agents
+            const activeTask = taskStatus === "working"
+              ? tasks.find(t => t.assignee_agent_id === a.id && t.status === "in_progress")
+              : null;
             return (
               <div key={id} style={{ position: "relative", display: "flex", alignItems: "center" }}
                 className="agent-row">
@@ -289,16 +258,16 @@ export default function Sidebar({ tasks, agents, activeView, onViewChange, onClo
                     fontWeight: isActive ? 500 : 400,
                   }}
                 >
-                  {/* Status dot */}
-                  <span style={{
+                  {/* Status dot -- derived from task data */}
+                  <span title={taskStatus + (activeTask ? `: #${activeTask.task_number} ${activeTask.title}` : "")} style={{
                     width: 20, display: "flex", alignItems: "center",
                     justifyContent: "center", flexShrink: 0,
                   }}>
                     <span style={{
                       display: "inline-block",
                       width: 7, height: 7, borderRadius: "50%",
-                      background: dotColor,
-                      boxShadow: dotGlow,
+                      background: dot.color,
+                      boxShadow: dot.glow,
                       flexShrink: 0,
                       transition: "background 0.3s, box-shadow 0.3s",
                     }} />
@@ -308,6 +277,11 @@ export default function Sidebar({ tasks, agents, activeView, onViewChange, onClo
                     textOverflow: "ellipsis", whiteSpace: "nowrap",
                   }}>
                     {a.display_name}
+                    {activeTask && (
+                      <span style={{ fontSize: 10, color: "#10b981", marginLeft: 6 }}>
+                        #{activeTask.task_number}
+                      </span>
+                    )}
                   </span>
                   {count > 0 && (
                     <span style={{
@@ -319,7 +293,7 @@ export default function Sidebar({ tasks, agents, activeView, onViewChange, onClo
                     </span>
                   )}
                 </button>
-                {/* Wake button -- always visible, small ▶ to the right */}
+                {/* Wake button */}
                 {onWakeAgent && (
                   <button
                     onClick={(e) => { e.stopPropagation(); onWakeAgent(a.name); }}

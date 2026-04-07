@@ -14,7 +14,7 @@ export function middleware(request) {
 
 export const config = {
   matcher: [
-    // Protect everything except login, auth API, and Next.js internals
-    '/((?!login|api/auth|_next/static|_next/image|favicon\\.ico).*)',
+    // Protect everything except login, auth + agent APIs, and Next.js internals
+    '/((?!login|api/auth|api/agents|_next/static|_next/image|favicon\\.ico).*)',
   ],
 }

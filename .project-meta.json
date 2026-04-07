@@ -1,0 +1,10 @@
+{
+  "project": "Mission Control",
+  "repo": "worldofgrooves/wog-mission-control",
+  "vercel_project": "wog-mission-control",
+  "vercel_id": "prj_9fe6uIKaT1BmSNWPKBf2aiiLqSA9",
+  "live_url": "janet.worldofgrooves.com",
+  "owner": "Vision",
+  "supabase": "gxavodhoymuozzasfkgj",
+  "notes": "Operational dashboard. Task management, agent wake, idea capture."
+}
