@@ -72,7 +72,7 @@ export function filterTasks(tasks, view) {
 
   switch (view) {
     case "my-day":
-      return active.filter(t => t.flagged_today || t.priority === "immediate");
+      return active.filter(t => (t.flagged_today || t.priority === "immediate") && !t.assignee_agent_id);
     case "important":
       return active.filter(t => t.priority === "immediate");
     case "blocked":
@@ -538,6 +538,9 @@ export default function MCApp() {
     // Pre-fill context from active view
     if (activeView === "my-day")       { fields.flagged_today = true; fields.priority = "immediate"; }
     if (activeView === "important")    { fields.priority = "immediate"; }
+    if (activeView === "today")        { fields.flagged_today = true; }
+    if (activeView === "this-week")    { const d = new Date(); d.setDate(d.getDate() + (7 - d.getDay())); d.setHours(17, 0, 0, 0); fields.deadline_at = d.toISOString(); }
+    if (activeView === "this-month")   { const d = new Date(); d.setMonth(d.getMonth() + 1, 0); d.setHours(17, 0, 0, 0); fields.deadline_at = d.toISOString(); }
     if (activeView.startsWith("agent:")) {
       const agentPart = activeView.slice(6);
       const isDone = agentPart.endsWith(":done");

@@ -146,7 +146,7 @@ function TaskRow({ task, agents, isSelected, onSelect, onToggleComplete, onToggl
         onMouseEnter={e => { if (!task.flagged_today) e.currentTarget.style.color = "#f59e0b"; }}
         onMouseLeave={e => { if (!task.flagged_today) e.currentTarget.style.color = "#2a2a2a"; }}
       >
-        ☀
+        ☀︎
       </button>
 
       {/* Play button -- only on tasks assigned to an agent, not done */}

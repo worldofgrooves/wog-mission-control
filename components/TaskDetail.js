@@ -324,7 +324,7 @@ export default function TaskDetail({
                 lineHeight: 1,
               }}
             >
-              ☀
+              ☀︎
             </button>
             {/* Delete task */}
             {onDelete && (

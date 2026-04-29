@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { filterTasks } from "./MCApp";
 
 const SMART_VIEWS = [
-  { id: "my-day",    label: "My Day",       icon: "☀" },
+  { id: "my-day",    label: "My Day",       icon: "☀︎" },
   { id: "important", label: "Important",     icon: "★" },
   { id: "blocked",   label: "Blocked",       icon: "⊘" },
   { id: "waiting",   label: "Waiting on Me", icon: "⏳" },
